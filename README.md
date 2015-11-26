@@ -174,6 +174,20 @@ interface_name`) c) force your system to use IGMPv2 d) add an `iptables` rule to
 accept multicast packets, if using the firewall. Please do not contact me about
 troubleshooting your network configuration.
 
+## eesti/r2get.py
+
+A script for downloading shows from [Raadio 2](http://r2.err.ee/). See `r2get.py
+-h` for more or less comprehensive usage instructions, and the file header for
+technical details.
+
+Requirements:
+
+* Python >=2.7, with
+  * [mutagen](https://mutagen.readthedocs.org/en/latest/)
+  * [Beautiful Soup 4](http://www.crummy.com/software/BeautifulSoup/)
+* [ffmpeg](https://www.ffmpeg.org/)
+* [rtmpdump](https://rtmpdump.mplayerhq.hu/)
+
 ## eesti/weather
 
 ```
