@@ -41,7 +41,7 @@ mp3tag {-t | -f} filename [filename ...]
 ```
 
 Copy mp3 tags to the filename as `ARTIST - TITLE.mp3` (`-f`) or write the artist
-and title tags to the mp3 file based on the filename formatted as such. Requires
+and title tags to the mp3 file (`-t`) based on the filename formatted as such. Requires
 [eyeD3](http://eyed3.nicfit.net/).
 
 ## reflow
