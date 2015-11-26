@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Install Perl modules to a specific directory. Pass the prefix 
+# as the first argument and any modules to install as subsequent
+# arguments.
+
+PREFIX=$1; shift
+MODULES=$*
+
+[[ $PREFIX && $MODULES ]] || {
+	echo "Usage: plinstall prefix module ..."
+	exit 1;
+}
+[[ $(echo $PREFIX | perl -nle '/^\s*\// && print "1";') ]] || \
+	PREFIX=$(pwd)/$PREFIX # relpath to abspath
+
+MAKEPLARG="
+	INSTALLDIRS=perl
+	PREFIX=$PREFIX
+	LIB=$PREFIX/lib
+	INSTALLMAN1DIR=$PREFIX/man1
+	INSTALLMAN3DIR=$PREFIX/man3
+"
+CONFIG=$(perl -e "
+	use Data::Dumper;
+	do('$HOME/.cpan/CPAN/MyConfig.pm') or die($!);
+	\$CPAN::Config->{makepl_arg} = '$MAKEPLARG';
+	print Data::Dumper->Dump([\$CPAN::Config], ['CPAN::Config']);
+")"1;"
+
+cpan -j <(echo $CONFIG) -i $MODULES
+

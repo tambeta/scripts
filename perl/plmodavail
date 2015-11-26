@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Check availability of a Perl module
+
+perl -e "use $1;" || exit 1
+
+perl <<HERE
+foreach (@INC) {
+	my \$fn = \$_ . "/$1.pm";
+	\$fn =~ s/\:\:/\//g;
+
+	if (-f \$fn) {
+		print "$1 is usable: ";
+		print "\$fn\n";
+		exit 0;
+	}
+}
+HERE
+

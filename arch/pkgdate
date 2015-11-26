@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Output packages sorted by install date, one per line with 
+# the install date prepended to the package name. All command
+# line arguments are passed on to pacman.
+
+pacman -Qi $* |\
+egrep '(^Install Date|^Name)' |\
+sed -r 's/Install Date[[:space:]:]+//g' | sed -r 's/Name[[:space:]:]+//g' |\
+awk '{
+	if (NR % 2 == 1) {
+		PKGNAME=$0
+	}
+	else {
+		system("echo -n $(date -d \"" $0 "\" +%Y-%m-%d)");
+		print " "PKGNAME;
+	}
+}' |\
+sort -nr
+

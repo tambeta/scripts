@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Command-line control of Spotify. Pass "play", "pause", 
+# "next", "prev" or "previous" as the argument.
+
+case $1 in
+	"play" | "pause" 	) KEY="XF86AudioPlay" ;;
+	"next" 				) KEY="XF86AudioNext" ;;
+	"prev" | "previous" ) KEY="XF86AudioPrev" ;;
+	* )
+		echo "Usage: $0 { play | pause | next | prev[ious] }" >&2
+		exit 1
+esac
+
+WID=$(xdotool search --name "Spotify Unlimited") || exit
+xdotool key --window $WID $KEY
+

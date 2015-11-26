@@ -1,0 +1,88 @@
+#!/bin/bash
+
+# IPTV frontend. Takes the channel ID as argument. Blasts IGMP join messages
+# to the channel mcast IP to ensure that the stream doesn't cut out. If the
+# proper interface is not connected, falls back to web stream.
+
+function get_conf_field {
+	egrep "^$CHID[[:space:]]" $CONFFN | awk "{print \$$1;}" | head -n1
+}
+
+function inject_igmp {
+	# IGMP code, mcast_ip, local_IP
+	nemesis igmp -c 0 -i $2 -p $1 -v -D $2 -S $3
+}
+
+function err_play {
+	echo $1 >&2
+	[ $URL_FB ] || {
+		echo "No fallback URL specified for $CHID!" >&2
+		exit 1
+	}
+	$PLAYER $URL_FB
+	exit 0
+}
+
+function err {
+	echo $1 >&2
+	exit 1
+}
+
+while getopts "ac:i:" OPT; do
+        case $OPT in
+                a ) ALTSTREAM=1 ;;
+                c ) CAPFILE=$OPTARG ;;
+				i ) IF=$OPTARG ;;
+        esac
+done
+
+for i in $(seq 1 $(($OPTIND-1)))
+	do shift; done
+
+CONFFN="$(dirname $0)/../data/iptvrc"
+DEFAULTPLFN="$(dirname $0)/../data/iptv.m3u"
+IF=${IF-enp12s0}
+PLAYER=vlc
+IPTVNET="^10\."
+
+CHID=$(awk "/^$1[[:space:]]/ {print \$1;}" $CONFFN)
+URL=$(get_conf_field 2)
+URL_FB=$(get_conf_field 3)
+	
+LOCAL_IP=$(ip a show $IF | perl -nle 'print $1 if /inet\s+((?:\d{1,3}\.?){4})/')
+MCAST_IP=$(echo $URL | perl -nle 'print $1 if /((?:\d{1,3}\.?){4})/')
+
+[ $CHID ] || {\
+	URL_FB=$DEFAULTPLFN
+	err_play "No channel ID passed, falling back to default playlist"
+}
+
+[ $ALTSTREAM ] &&\
+	err_play "Web stream requested"
+[ $LOCAL_IP ] ||\
+	err_play "Cannot determine local IP address, falling back to web stream"
+[ $MCAST_IP ] ||\
+	err_play "Cannot determine mcast IP address, falling back to web stream"
+echo $LOCAL_IP | egrep -q "$IPTVNET" ||\
+	err_play "$IF is not on the IPTV subnet, falling back to web stream"
+
+(
+	while true; do
+		sleep 8
+		inject_igmp 22 $MCAST_IP $LOCAL_IP
+		sleep 2
+		ps p $$ >/dev/null 2>&1 || {
+			inject_igmp 23 $MCAST_IP $LOCAL_IP
+			exit
+		}
+	done
+)&
+
+shift
+
+if [[ $CAPFILE ]]; then
+	mplayer $URL -dumpstream -dumpfile $CAPFILE
+else
+	$PLAYER --sub-track 0 --deinterlace 1 --deinterlace-mode yadif2x $* $URL
+fi
+

@@ -1,0 +1,17 @@
+#EXTM3U
+#EXTINF:0,ETV
+rtmp://wowza3.err.ee:80/live/etvh
+#EXTINF:0,ETV2
+rtmp://wowza3.err.ee:80/live/etv2h
+#EXTINF:0,Kanal 2
+rtmp://ingress2.cdn.mind.ee:1935/kanal2_live/_definst_/live_1
+#EXTINF:0,TV3
+rtmp://88.196.221.246:1935/bb1028/_definst_/trans.stream_576p
+#EXTINF:0,Tallinna TV
+rtmp://b4.babahh.com:1935/bbttv1/_definst_/tlntv
+#EXTINF:0,TV 6
+rtmp://88.196.221.246:1935/bb1028/_definst_/trans2_576p.stream
+#EXTINF:0,Kanal 11
+rtmp://ingress2.cdn.mind.ee:1935/kanal11_live/_definst_/live_1
+#EXTINF:0,Kanal 12
+rtmp://ingress2.cdn.mind.ee:1935/kanal12_live/_definst_/live_1

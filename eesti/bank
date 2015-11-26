@@ -1,0 +1,250 @@
+#!/usr/bin/perl
+
+# A script to analyze a Swedbank CSV bank statement and group expenditures by
+# function, based on the groups defined in `statementgroups`. Pass the
+# statement and statement groups filenames as the arguments.
+
+use warnings;
+use strict;
+use utf8;
+
+use Data::Dumper;
+use Encode;
+use Text::ASCIITable;
+use Text::CSV;
+use FindBin;
+
+use constant {
+	RT_TRANSACTION 	=> 20,
+	RT_START_CASH	=> 10,
+	RT_END_CASH		=> 86,
+	RT_TURNOVER		=> 82,
+};
+
+sub dmp {
+	$Data::Dumper::Indent = 3;
+	print Data::Dumper->Dump([shift]);
+}
+
+sub main {
+	my $csv_fn = $ARGV[0];
+	my $groups_fn = $ARGV[1];
+	my $rows;
+	my $groups;
+	my $grouped_rows;
+	my $table;
+
+	(@ARGV)
+		or die("Pass the CSV statement file name as the argument.\n");
+	binmode(STDOUT, ":utf8");
+
+	$rows = parse_csv($csv_fn);
+	$groups = parse_groups($groups_fn);
+	$table = make_table($rows, $groups);
+
+	print $table;
+}
+
+sub parse_groups {
+	
+	# Parse a tab-separated expenditure groups file
+	# and return a hash reference (substring -> group).
+	
+	my ($fn) = @_;
+	my %groups;
+
+	open(G, "<:encoding(utf8)", $fn)
+		or die("Cannot open $fn: $!\n");
+	while (<G>) {
+		chomp;
+		my @pair = split(/\t/);
+		$groups{trim($pair[1])} = trim($pair[0]);1		
+	}
+	
+	\%groups;
+}
+
+sub parse_csv {
+	
+	# Parse the CSV file into an array of hashrefs.
+	
+	my ($fn) = @_;
+	
+	my $csv;
+	my $fh;
+	my @rows;
+	
+	(open($fh, "<:encoding(utf8)", $fn))
+		or die("Cannot open $fn: $!\n");	
+	$csv = Text::CSV->new({
+		sep_char => ";",
+		allow_loose_quotes => 1,
+		escape_char => '~', # hack to parse fields with '"' inside
+	});
+
+	$csv->getline($fh);
+	while (my $row = $csv->getline($fh)) {
+		my %r;		
+		$r{rowtype}		= $row->[1];
+		$r{date} 		= $row->[2];
+		$r{recipient}	= $row->[3];
+		$r{comment}		= $row->[4];
+		$r{sum}			= $row->[5];
+		$r{d_or_c}		= $row->[7];
+		
+		$r{comment}   =~ s/[\s\p{C}]+/ /g;
+		$r{recipient} =~ s/[\s\p{C}]+/ /g;
+		$r{sum} =~ s/,/./;
+		$r{sum} = -$r{sum}
+			if ($r{d_or_c} eq "D");
+		$r{sum} = sprintf("%.2f", $r{sum});
+		
+		push(@rows, \%r);
+	}
+
+	\@rows;
+}
+
+sub group_rows {
+	
+	# Group the rows into a hash of arrayrefs.
+	
+	my ($rows, $groups) = @_;
+	my %grows;
+	
+	foreach my $row (@$rows) {		
+		my $gname = "__unknown__";		
+		next unless($row->{rowtype} == RT_TRANSACTION);	
+		
+		while (my ($match, $group) = each(%$groups)) {						
+			if ($row->{comment} =~ /$match/i || $row->{recipient} =~ /$match/i) {
+				$gname = $group;
+				keys %$groups; # reset each()
+				last;
+			}
+		}
+		
+		$grows{$gname} = []
+			unless($grows{$gname});
+		push(@{$grows{$gname}}, $row);		
+	}
+	
+	\%grows;
+}
+
+sub make_table {
+	
+	# Generate and return a nicely formatted 
+	# Text::ASCIITable.
+	
+	my ($rows, $groups) = @_;
+	
+	my $grouped_rows = group_rows($rows, $groups);	
+	my $table = Text::ASCIITable->new();
+	my @sorted_groups;
+	my $start_cash;
+	my $end_cash;
+	my $expenditure = 0;
+	my $income = 0;
+	my $test_sum = 0;
+	
+	# Set up table
+
+	$table->setOptions("allowANSI", 1);
+	$table->setCols("Kuupäev", "Saaja", "Selgitus", "Summa");
+	$table->setColWidth("Selgitus", 60);	
+	$table->alignCol("Kuupäev", "left");
+	$table->alignCol("Selgitus", "left");
+	$table->alignCol("Summa", "right");	
+
+	# Display groups
+	
+	$grouped_rows->{muu} = $grouped_rows->{__unknown__};
+	delete $grouped_rows->{__unknown__};
+	@sorted_groups = sort {
+		return  1 if ($a eq "muu") ;
+		return -1 if ($b eq "muu");
+		$a cmp $b;
+	} keys(%$grouped_rows);
+	
+	foreach my $g (@sorted_groups) {
+		my $gsum = 0;
+		$table->addRow(bold_text(uc($g)));
+		$table->addRowLine();
+		
+		foreach (@{$grouped_rows->{$g}}) {
+			my $recipient = $_->{recipient} || "-";
+			my $comment = $_->{comment} || "-";
+			my $sum = $_->{sum};
+			
+			$sum = $sum < 0 ? 
+				red_text($sum) : green_text($sum);
+			
+			eval {
+				$table->addRow($_->{date}, $recipient, $comment, $sum);
+			};
+			if ($@ =~ /wide character/) { # encode to single-byte inbetween
+				$table->addRow(           # if Text::ASCIITable croaks
+					$_->{date}, encode("iso-8859-15", $recipient), 
+					encode("iso-8859-15", $comment), $sum
+				);
+			}
+			$gsum += $_->{sum};
+			$test_sum += $_->{sum};
+		}
+		
+		$table->addRowLine();
+		$table->addRow("", "", "", bold_text(sprintf("%.2f", $gsum)));
+		$table->addRowLine();
+	}
+	
+	# Display overview
+	
+	foreach (@$rows) {
+		if ($_->{rowtype} == RT_START_CASH)
+			{ $start_cash = $_->{sum} }
+		elsif ($_->{rowtype} == RT_END_CASH)
+			{ $end_cash = $_->{sum} }
+		elsif ($_->{rowtype} == RT_TURNOVER && $_->{d_or_c} eq "D")
+			{ $expenditure = $_->{sum} }
+		elsif ($_->{rowtype} == RT_TURNOVER && $_->{d_or_c} eq "K")
+			{ $income = $_->{sum} }
+	}
+
+	die(
+		"Summed turnover not equal to reported difference of expenditure " .
+		"and income ($test_sum != $expenditure + $income)!\n"
+	)
+		unless(abs($test_sum - ($expenditure + $income)) < 1e-6);
+	
+	$table->addRow("", "Algsaldo", "", $start_cash);
+	$table->addRow("", "Lõppsaldo", "", $end_cash);
+	$table->addRow("", "Sissetulekud", "", $income);
+	$table->addRow("", "Väljaminekud", "", $expenditure);
+	
+	$table;
+}
+
+sub trim {
+	local $_ = shift;
+	s/(^\s+|\s+$)//g;
+	$_;
+}
+
+sub bold_text {
+	local $_ = shift;
+	"\x1B[1m$_\x1B[m";
+}
+
+sub green_text {
+	local $_ = shift;
+	"\x1B[32m$_\x1B[m"
+}
+
+sub red_text {
+	local $_ = shift;
+	"\x1B[31m$_\x1B[m"
+}
+
+main();
+

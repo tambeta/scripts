@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# See the example .backup.conf for configuration options and details.
+
+function fn_exists() {
+	type $1 2>/dev/null | fgrep -ic function > /dev/null;
+}
+
+function incl_excl() {
+
+	# Function turning a space-separated string into include / exclude (or any
+	# other) parameters. The first parameter is the string, the second is the
+	# desired parameter name (default: "exclude"), the third is any prefix to
+	# prepend to patterns, the fourth is a boolean indicating whether to
+	# escape the prefix.
+
+	INEX=$1
+	PARAM=${2-exclude}
+	PREFIX=$3
+	
+	[[ $4 && $PREFIX ]] && PREFIX=$(echo $PREFIX | perl -ple 's|/|\\/|g');
+
+	INEX=$(echo "$INEX" | sed -r 's/(\s+$|^\s+)//g')
+	INEX=$(echo "$INEX" | sed -r "s/(\s+|^)([^[:space:]]+)/ --$PARAM=$PREFIX\2/g")
+	echo "$INEX"
+}
+
+CONFFILE="./.backup.conf"
+WORKDIR=$(pwd)
+SCRDIR=$(dirname $0)
+
+# Attempt to source backup system configuration file
+
+if ! source $CONFFILE; then
+	echo "Cannot source configuration file in working directory!"
+	exit 1
+fi
+
+# Call the init function, if available
+# Useful to change working dir
+
+fn_exists _backup_init && _backup_init
+
+# Source appropriate module
+
+if [ $DURL ]; then
+	source $SCRDIR/lib/backup-dup.sh
+else
+	source $SCRDIR/lib/backup-tar.sh
+fi
+
+# Call the cleanup function, if available
+
+fn_exists _backup_cleanup && _backup_cleanup
+

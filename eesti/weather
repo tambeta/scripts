@@ -1,0 +1,97 @@
+#!/bin/bash
+
+# Without arguments, print the current temperature from meteo.physic.ut.ee
+# If -R is given, print the record temperature days this year
+# If -r is given, reverse the order (i.e. display the coldest dates)
+# If -i is given, invert minima and maxima (i.e. show warmest daily minima with -R, coldest daily maxima with -Rr)
+# -n determines the number of dates to output
+# -y determines year, current year by default
+
+while getopts "rRdin:y:" OPT; do
+	case $OPT in
+		r ) REVERSE=1  ;;
+		R ) RECORDS=1  ;;
+		d ) DEWPOINT=1 ;;
+		i ) INVERSE=1 ;;
+		n ) N=$OPTARG  ;;
+		y ) YEAR=$OPTARG ;;
+	esac
+done
+
+# Frobnicate options
+
+N=$(($N+0))
+[[ $N -le 0 ]] && N=10
+
+CURRYEAR=$(date +%Y)
+if [ $YEAR ]; then
+	YEAR=$(($YEAR+0))
+	[[ $YEAR -lt 1999 || $X -gt $CURRYEAR ]] && {
+		echo "Warning: Year must be in the range 1999 .. $CURRYEAR, setting to $CURRYEAR" >&2
+		YEAR=$CURRYEAR
+	}
+else
+	YEAR=$CURRYEAR
+fi
+
+if [ $REVERSE ]; then REVERSE=""	
+else REVERSE="r"; fi
+
+FST_REVERSE=$REVERSE
+SND_REVERSE=$REVERSE
+
+if [ $INVERSE ]; then
+	if [ $REVERSE ]; then
+		FST_REVERSE=""
+		SND_REVERSE="r"
+	else
+		FST_REVERSE="r"
+		SND_REVERSE=""
+	fi
+fi
+
+# Only output current temperature and exit
+
+[ ! $RECORDS ] && {
+	wget -O - http://meteo.physic.ut.ee/et/freshwin.php 2>/dev/null | perl -nle 'print $1, " C" if (/<B>(.*?) &deg;C/);'
+	exit;
+}
+
+# Dew point
+
+if [ $DEWPOINT ]; then
+	URL="http://meteo.physic.ut.ee/et/archive.php?do=data&begin[year]=$YEAR&begin[mon]=1&begin[mday]=1&end[year]=$YEAR&end[mon]=12&end[mday]=31&9=1&12=1"
+	DPFILTER='
+		my $a = 17.271;
+		my $b = 237.7;
+		
+		while (<>) {
+			my ($time, $t, $h) = split(/, /);
+			next unless ($t > 0 && $h > 0);
+			my $d =
+				($b * (($a * $t) / ($b + $t) + log($h / 100))) /
+				($a - (($a * $t) / ($b + $t) + log($h / 100)));
+			print "$time, $d\n";
+		}'
+else
+	URL="http://meteo.physic.ut.ee/et/archive.php?do=data&begin[year]=$YEAR&begin[mon]=1&begin[mday]=1&end[year]=$YEAR&end[mon]=12&end[mday]=31&9=1"
+	DPFILTER='print $_ while(<>);'
+fi
+
+# Records
+#
+# Note: By combining the first and second $REVERSE options
+# differently it's possible to get the coldest daily 
+# maxima of the year and the warmest daily minima of the year.
+# See the -i option.
+
+wget -O - $URL 2>/dev/null | tail -n+2 | perl -e "$DPFILTER" | \
+	egrep -v '^.{19}, $' | \
+	sort -"$FST_REVERSE"nk 3 | sort -sk 1,1 | \
+	awk '{print $2, $3, $1}' | uniq -f2 | \
+	awk '{printf "%.1f", $2; print "\t", $3, $1}' | sed 's/,//'  | \
+	sort -n"$SND_REVERSE" | head -n"$N"
+
+
+
+

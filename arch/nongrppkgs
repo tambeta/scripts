@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# List explicitly-installed packages that
+# are not part of a group
+
+pacman -Qe | fgrep -vf <(pacman -Qg | awk '{print $2}')

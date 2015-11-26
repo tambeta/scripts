@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Resize a window (partially) matching the title.
+
+[ $3 ] || {
+	echo "Usage: windowdim window_title width height" >&2
+	exit
+}
+
+TITLE=$1
+W=$2
+H=$3
+WID=$(xdotool search --onlyvisible --title "$TITLE")
+N=$(echo $WID | tr " " "\n" | wc -l)
+
+[ "$WID" ] || {
+	echo "Cannot find window with title \"$TITLE\"" >&2
+	exit
+}
+[[ $N > 1 ]] && {
+	echo "Cowardly refusing to resize more than one matching window" >&2
+	exit
+}
+
+xdotool windowsize $WID $W $H
+
+
+

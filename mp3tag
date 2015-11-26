@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Copy filename in the form of "artist - title.mp3" to mp3 tags,
+# or vice versa.
+#
+# mp3tag {-t | -f} filename [filename ...]
+
+EYED3=$(which eyed3 2>/dev/null)$(which eyeD3 2>/dev/null)
+
+function usage {
+	echo "mp3tag {-t | -f} filename [filename ...]"
+}
+
+while getopts "tf" OPT; do
+	case $OPT in
+		t ) TO_TAG=1 ;;
+		f ) TO_FN=1 ;;
+	esac
+done
+
+[[ !($TO_TAG || $TO_FN) || ($TO_TAG && $TO_FN)]] && {
+	usage;
+	echo "Please specify one of -t (write tags), -f (write filename)." >&2
+	exit 1;
+}
+
+while [[ $1 ]]; do	
+	FN=$(echo $1 | egrep '\.mp3$'); shift
+	[[ ! "$FN" ]] && continue	
+	
+	# Write tags based on filename
+	
+	if [ $TO_TAG ]; then
+		[ -w "$FN" ] || {
+			echo "$FN is not writable!" >&2
+			continue;
+		}
+		
+		ARTIST=$(echo "$FN" | perl -nle '/^(.*?)-/; $a = $1; $a =~ s/(^\s+|\s+$)//g; print $a;')
+		TITLE=$(echo "$FN" | perl -nle '/^.*?-(.*?)\.mp3$/; $a = $1; $a =~ s/(^\s+|\s+$)//g; print $a;')
+		
+		if [[ "$TITLE" && "$ARTIST" ]]; then
+			$EYED3 --no-color -a "$ARTIST" -t "$TITLE" "$FN" >/dev/null
+		else
+			echo "Cannot write tag for $FN!" >&2
+		fi
+		
+	# Write filename based on tags
+		
+	elif [ $TO_FN ]; then		
+		TA=$($EYED3 --no-color "$FN" 2>/dev/null | egrep 'title\:.*artist\:')
+		TITLE=$(echo "$TA" | perl -nle '/title\: (.*?)artist\:/; $a = $1; $a =~ s/(^\s+|\s+$)//g; print $a;')
+		ARTIST=$(echo "$TA" | perl -nle '/title\: .*?artist\:(.*)$/; $a = $1; $a =~ s/(^\s+|\s+$)//g; print $a;')
+		
+		if [[ "$TITLE" && "$ARTIST" ]]; then
+			mv "$FN" "$ARTIST - $TITLE.mp3"
+			echo "Renamed \"$FN\" to \"$ARTIST - $TITLE.mp3\"" >&2
+		else
+			echo "Cannot rename $FN!" >&2
+		fi
+	fi	
+done
+

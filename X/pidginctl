@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Command-line control of Pidgin via D-Bus. Currently toggles available /
+# offline mode.
+
+ST_OFFLINE=1
+ST_AVAILABLE=2
+
+function dbus_send {
+
+	# Invoke a method on Pidgin's D-Bus interface. The first argument is the
+	# method name, the rest are parameters in D-Bus format. 
+
+	METHOD=$1; shift
+	DBUS_REPLY=$(dbus-send --print-reply=literal --dest=im.pidgin.purple.PurpleService \
+		/im/pidgin/purple/PurpleObject im.pidgin.purple.PurpleInterface.$METHOD $@ \
+		| head -n1 | awk '{print $2}')
+}
+
+function dbus_send_err {
+	
+	# Same as dbus_send, but dies on empty reply.
+	
+	dbus_send $@
+	[[ $DBUS_REPLY ]] || exit 1
+}
+
+function notify {
+	if [[ $1 == $ST_OFFLINE ]]; then
+		ICONSPEC="offline"
+	else
+		ICONSPEC="available"
+	fi
+
+	notify-send -t 1500 -i \
+		/usr/share/pixmaps/pidgin/tray/hicolor/48x48/status/pidgin-tray-${ICONSPEC}.png \
+		"Pidgin: ${ICONSPEC}"
+}
+
+dbus_send_err PurpleSavedstatusGetCurrent
+dbus_send_err PurpleSavedstatusGetType int32:$DBUS_REPLY
+
+if [[ $DBUS_REPLY == $ST_OFFLINE ]]; then
+	dbus_send_err PurpleSavedstatusNew string:"" int32:$ST_AVAILABLE
+	dbus_send PurpleSavedstatusActivate int32:$DBUS_REPLY
+	notify $ST_AVAILABLE
+else
+	dbus_send_err PurpleSavedstatusNew string:"" int32:$ST_OFFLINE
+	dbus_send PurpleSavedstatusActivate int32:$DBUS_REPLY
+	notify $ST_OFFLINE
+fi
+

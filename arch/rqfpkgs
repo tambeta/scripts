@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# List foreign packages (e.g. from AUR)
+# that are required by other packages
+
+pacman -Qmi | awk '/Name/ {NM=$3}; /Required By/ {if ($4 != "None") print NM}'
+

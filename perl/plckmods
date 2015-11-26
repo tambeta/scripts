@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Utility for finding all Perl files under the current directory and listing
+# dependency modules. $* is passed to scandeps.pl. Pass -n to list unavailable
+# dependencies, in such case $* is ignored.
+
+# Usage
+
+if [[ $1 == "--help" ]]; then
+	echo -e "Usage: $0 {-n | args_to_scandeps}\n"
+	echo -e "Examples:\n"
+	echo    "plckmods -R # list immediate dependencies"
+	echo    "PERL5LIB=\$(pwd)/mod plckmods -n # look for local modules"
+
+# Unavailable modules
+
+elif [[ $1 == "-n" ]]; then
+	find -name '*.p[lm]' |\
+		xargs scandeps.pl -V 2>&1 | fgrep 'Could not' | cut -d"'" -f2 |\
+		sed -r 's/\.pm//g;s/\//::/g' | sort | uniq
+
+# List all dependencies
+
+else
+	find . -name '*.p[lm]' | xargs scandeps.pl $* | sort
+fi
+

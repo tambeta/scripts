@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# Check whether foreign packages have become available
+# in binary repositories
+
+for i in $(pacman -Qmeq); do echo "looking for $i"; pacman -Ss "$i"; done
+

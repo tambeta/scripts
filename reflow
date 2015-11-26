@@ -1,0 +1,212 @@
+#!/usr/bin/perl
+
+# Script to reflow a block of comments wrapped to a given length.
+# Intended to be used as an editor extension. The TABW constant is the
+# allowed width of the pure block, i.e. only text starting from the first
+# non-space character after the hash (`#`) on a line.
+
+use strict;
+use warnings;
+
+use Data::Dumper;
+use Text::Autoformat;
+
+use constant {
+	TABW 	=> 4,
+	W 		=> 72,
+};
+
+my %g = (
+	psub => [],
+);
+
+sub dmp {
+	my $s = shift;
+	print Data::Dumper->Dump([$s]);	
+}
+
+sub main {
+	my $white;
+	my $pure = "";
+	my $reflow;
+	my $comment;
+	
+	# Determine the whitespace prefix and extract the 
+	# pure paragraph to be reformatted
+	
+	while (<>) {
+		my $len;
+		my $str;
+
+		chomp;
+		next unless(/^(\s*)(#|\/\/)\s*(.*)$/);
+
+		$white = $1
+			unless(defined($white));
+		$comment = $2;
+		$pure .= "$3\n";
+	}
+
+	# Autoformat; force buggy module's warnings to 
+	# /dev/null
+		
+	{
+		open(DEVNULL, ">", "/dev/null")
+			or die("Cannot open /dev/null");
+		local *STDERR = *DEVNULL;
+		
+		$reflow = autoformat($pure, {
+			right		=> W,
+			all			=> 1,
+			tabspace	=> TABW,
+			ignore		=> \&detect_customp,
+		});		
+	};
+	
+	# Custom paragraph handler substitutions
+	
+	foreach (@{$g{psub}}) {
+		my $p = $_->[0];
+		my $fp = $_->[1];
+		my $start = index($reflow, $p);
+		
+		die("Cannot find paragraph with a custom handler in reflowed text")
+			if ($start < 0);
+		substr($reflow, $start, length($p), $fp);
+	}
+	
+	# Print formatted result
+	
+	foreach (split(/\n/, $reflow)) {
+		print "${white}${comment} $_\n";
+	}
+}
+
+# Custom paragraph handling
+
+sub detect_customp {
+	
+	# Detect custom paragraphs. Loop over every custom_* sub, return true
+	# unless any of those returns a defined value. In such case, enter the
+	# returned string into the paragraph substitutions array.
+	
+	foreach my $sub (keys %main::) {
+		no strict 'refs';		
+		
+		if ($sub =~ /^custom_/ && ref(*{$sub}{CODE})) {
+			if (my $fp = $sub->($_)) {
+				push(@{$g{psub}}, [$_, $fp]);
+				return 1;
+			}
+		}
+	}
+	
+	0;
+}
+
+sub custom_attrlist {
+	
+	# Attribute lists. The first line begins with a single word,
+	# followed by any space and a dash.
+	
+	my ($p) = @_;
+	
+	my $fp = "";
+	my @lines;
+	my @attrlist;
+	my $attr_maxlen = 0;
+	my $bucket;
+	
+	# Detect
+	
+	return undef 
+		unless($p =~ /\s*\w+\s+-/);
+	
+	# Collect attribute - description pairs
+	
+	foreach (split(/\n/, $p)) {
+		my $attr;
+		my $rest;
+			
+		if (/\s*(\w+)\s+-\s*(.*)/) {
+			$attr = $1;
+			$rest = $2;
+		}
+		
+		if ($attr) {
+			$attr_maxlen = length($attr)
+				if (length($attr) > $attr_maxlen);
+			push(@attrlist, [$attr, $rest]);
+			$bucket = \($attrlist[-1][1]);
+			
+		}
+		elsif (ref($bucket) eq "SCALAR") {
+			$$bucket .= " "
+				unless ($$bucket =~ /\s$/ || /^\s/);
+			$$bucket .= $_;
+		}
+	}
+	
+	# Format
+	
+	foreach (@attrlist) {
+		my $attr = $_->[0];
+		my $descr = $_->[1];
+		my $attr_len = length($attr);
+		my $padding = 0;
+		my $break;	
+		my $str;
+		
+		$attr .= " " x ($attr_maxlen - $attr_len);
+		$descr =~ s/\s+/ /g; # Collapse spaces
+		$str = "$attr - $descr";
+		
+		while ($str) {
+			($break, $str) = _break_left($str, W, $padding);
+			$fp .= $break . "\n";
+			$padding = $attr_maxlen + 3;
+		}
+	}
+	
+	$fp;
+}
+
+# Auxiliary functions
+
+sub _break_left {
+	
+	# Break a substring on whitespace off from $str on the left, with
+	# max width $len. Optional padding on the left of $padding spaces
+	# may be specified. Returns the broken-off string and the remainder.
+	# No tab handling.
+	
+	my ($str, $len, $padding) = @_;	
+	
+	my $break;
+	my $rest;
+	my $spacei = 0;
+	
+	$padding ||= 0;
+	$str = (" " x $padding) . $str;
+	
+	return $str
+		if (length($str) <= $len);	
+	
+	foreach my $i (0 .. length($str) - 1) {
+		my $chr = substr($str, $i, 1);
+		
+		last
+			if ($i >= $len);
+		$spacei = $i 
+			if ($chr =~ /\s/);
+	}
+	
+	$break = substr($str, 0, $spacei + 1);
+	$rest = substr($str, $spacei + 1);
+	
+	wantarray ? 
+		($break, $rest) :
+		$break;
+}
+
+main();

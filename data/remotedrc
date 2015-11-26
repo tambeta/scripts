@@ -1,0 +1,12 @@
+KEY_POWER	<vlc_start>	playlist.m3u
+KEY_POWER2	gnome-screensaver-command --lock; sleep 2; sudo pm-suspend
+KEY_VOLUMEUP	amixer set Master 5%+
+KEY_GREEN	amixer set Master 70%
+KEY_VOLUMEDOWN	amixer set Master 5%-
+KEY_PLAY	<mpris>	PlayPause
+KEY_PAUSE	<mpris>	PlayPause
+KEY_STOP	<mpris>	Stop
+KEY_NEXT	<mpris>	Next
+KEY_PREVIOUS	<mpris>	Previous
+KEY_REWIND	<mpris>	Seek	-10000000
+KEY_FASTFORWARD	<mpris>	Seek	10000000

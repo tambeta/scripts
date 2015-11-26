@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Convert a video stream into high quality x264; by default 720p, CRF 20,
+# preset: slow.
+
+IFN=""
+OFN=""
+PROFILE="720high"
+
+usage() {
+	echo "Convert a video stream into x264, copying audio."
+	echo -e "\nUsage: $0 -i input_file [-p profile] output_file"
+	exit 1
+}
+
+# Parse arguments
+
+while getopts "i:p:" OPT; do
+	case $OPT in
+		i ) IFN=$OPTARG  ;;
+		p ) PROFILE=$OPTARG ;;
+	esac
+done
+
+shift $((OPTIND-1))
+OFN=$1
+
+[ -z $IFN ] && usage
+[ -z $OFN ] && usage
+
+# Profile definitions
+
+if [[ $PROFILE == "720high" ]]; then
+	HEIGHT="720"
+	ENCSETTINGS="-preset slow -crf 20" 
+elif [[ $PROFILE == "480med" ]]; then
+	HEIGHT="480"
+	ENCSETTINGS="-preset slow -crf 23" 
+else
+	echo "No valid profile specified!"
+	exit
+fi
+
+# Compile command line and run ffmpeg
+
+[ $HEIGHT ] && VF="-vf scale=-2:$HEIGHT"
+CMD="ffmpeg -y -i $IFN $VF -c:v libx264 $ENCSETTINGS -c:a copy $OFN"
+
+echo "$CMD"
+$CMD
+
