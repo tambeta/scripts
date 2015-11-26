@@ -1,4 +1,4 @@
-# perl/plinstall
+## perl/plinstall
 
 From the script header:
 
@@ -7,7 +7,7 @@ Install Perl modules to a specific directory. Pass the prefix as the
 first argument and any modules to install as subsequent arguments.
 ```
 
-# perl/plstordmp
+## perl/plstordmp
 
 From the script header:
 
@@ -16,7 +16,7 @@ Dump the contents of a Storable serialized in a file, file name passed
 as the command line argument
 ```
 
-# perl/plmodavail
+## perl/plmodavail
 
 From the script header:
 
@@ -24,7 +24,7 @@ From the script header:
 Check availability of a Perl module
 ```
 
-# perl/plckmods
+## perl/plckmods
 
 From the script header:
 
@@ -34,7 +34,7 @@ listing dependency modules. $* is passed to scandeps.pl. Pass -n to
 list unavailable dependencies, in such case $* is ignored.
 ```
 
-# backup
+## backup
 
 From the script header:
 
@@ -42,7 +42,7 @@ From the script header:
 See the example .backup.conf for configuration options and details.
 ```
 
-# X/pidginctl
+## X/pidginctl
 
 From the script header:
 
@@ -51,7 +51,7 @@ Command-line control of Pidgin via D-Bus. Currently toggles available /
 offline mode.
 ```
 
-# X/ckfs
+## X/ckfs
 
 From the script header:
 
@@ -61,7 +61,7 @@ in which case disable power management. Useful for running as a
 frequent cron job or from a periodic script.
 ```
 
-# X/spotifyctl
+## X/spotifyctl
 
 From the script header:
 
@@ -70,7 +70,7 @@ Command-line control of Spotify. Pass "play", "pause", "next", "prev"
 or "previous" as the argument.
 ```
 
-# X/windowdim
+## X/windowdim
 
 From the script header:
 
@@ -78,7 +78,7 @@ From the script header:
 Resize a window (partially) matching the title.
 ```
 
-# reflow
+## reflow
 
 From the script header:
 
@@ -89,7 +89,7 @@ allowed width of the pure block, i.e. only text starting from the first
 non-space character after the hash (`#`) on a line.
 ```
 
-# mp3tag
+## mp3tag
 
 From the script header:
 
@@ -98,7 +98,7 @@ Copy filename in the form of "artist - title.mp3" to mp3 tags, or vice
 versa. mp3tag {-t | -f} filename [filename ...]
 ```
 
-# vid2x264
+## vid2x264
 
 From the script header:
 
@@ -107,7 +107,7 @@ Convert a video stream into high quality x264; by default 720p, CRF 20,
 preset: slow.
 ```
 
-# eesti/bank
+## eesti/bank
 
 From the script header:
 
@@ -118,7 +118,7 @@ expenditures by function, based on the groups defined in
 the arguments.
 ```
 
-# eesti/weather
+## eesti/weather
 
 From the script header:
 
@@ -131,7 +131,7 @@ daily minima with -R, coldest daily maxima with -Rr) -n determines the
 number of dates to output -y determines year, current year by default
 ```
 
-# eesti/iptv
+## eesti/iptv
 
 From the script header:
 
@@ -141,7 +141,7 @@ messages to the channel mcast IP to ensure that the stream doesn't cut
 out. If the proper interface is not connected, falls back to web stream.
 ```
 
-# arch/rqfpkgs
+## arch/rqfpkgs
 
 From the script header:
 
@@ -150,7 +150,7 @@ List foreign packages (e.g. from AUR) that are required by other
 packages
 ```
 
-# arch/ckfpkgs
+## arch/ckfpkgs
 
 From the script header:
 
@@ -159,7 +159,7 @@ Check whether foreign packages have become available in binary
 repositories
 ```
 
-# arch/nongrppkgs
+## arch/nongrppkgs
 
 From the script header:
 
@@ -167,7 +167,7 @@ From the script header:
 List explicitly-installed packages that are not part of a group
 ```
 
-# arch/pkgdate
+## arch/pkgdate
 
 From the script header:
 
