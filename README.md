@@ -8,7 +8,10 @@ GNU/Linux-using public. The scripts are categorized into directories as follows:
 * `X` - scripts useful within a graphical user environment (X11)
 
 The root directory contains miscellaneous other scripts, `lib` currently only
-contains backends for `backup`, `data` contains configuration files.
+contains backends for `backup`, `data` contains configuration files. The scripts
+expect a full-featured modern Linux system as their environment; standard
+requirements like `perl`, `awk`, `wget` etc. are not listed for each script.
+Many scripts can be run with no arguments, `-h` or `--help` for usage info.
 
 ## backup
 
@@ -34,24 +37,41 @@ See `backup`, `lib/backup*` and `.backup.conf.example` for details.
 ## mp3tag
 
 ```
-Copy filename in the form of "artist - title.mp3" to mp3 tags, or vice 
-versa. mp3tag {-t | -f} filename [filename ...]
+mp3tag {-t | -f} filename [filename ...]
 ```
 
 Copy mp3 tags to the filename as `ARTIST - TITLE.mp3` (`-f`) or write the artist
-and title tags to the mp3 file based on the filename formatted as such.
+and title tags to the mp3 file based on the filename formatted as such. Requires
+[eyeD3](http://eyed3.nicfit.net/).
 
 ## reflow
 
+A Perl script accepting a block of comments (lines starting with `#` or `//`)
+on its standard input and piping a nicely formatted result to its standard
+output.  Use as an editor extension (Geany, vim, ...). Requires
+[Text::Autoformat](http://search.cpan.org/~neilb/Text-Autoformat-1.73/lib/Text/Autoformat.pm)
+and pipes the cleaned input through its main routine.  As an extended feature,
+supports formatting argument list documentation, i.e.
+
 ```
-Script to reflow a block of comments wrapped to a given length. 
-Intended to be used as an editor extension. The TABW constant is the 
-allowed width of the pure block, i.e. only text starting from the first 
-non-space character after the hash (`#`) on a line.
+	// Add a tool to the toolbar. Attributes:
+	//
+	// id - identifier string, required
+	// toggle - a boolean specifying whether the tool is a toggle button
+	// handlers - an object of [jQuery] event handlers, keyed by event. The handler will 
+	// receive the tool spec object as event.data.
 ```
 
+will be formatted as
 
-
+```
+	// Add a tool to the toolbar. Attributes:
+	// 
+	// id       - identifier string, required
+	// toggle   - a boolean specifying whether the tool is a toggle button
+	// handlers - an object of [jQuery] event handlers, keyed by event. The 
+	//            handler will receive the tool spec object as event.data.
+```
 
 ## vid2x264
 
@@ -59,6 +79,13 @@ non-space character after the hash (`#`) on a line.
 Convert a video stream into high quality x264; by default 720p, CRF 20, 
 preset: slow.
 ```
+
+Convenience frontend to `ffmpeg`. Convert input to x264 video, based on a
+hardcoded profile. Available profiles are currently `720high` and `480med`.
+
+Usage example:
+
+`vid2x264 -i input.mp4 -p 720high output.mkv`
 
 ## arch/ckfpkgs
 

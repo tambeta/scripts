@@ -1,17 +1,8 @@
-#EXTM3U
-#EXTINF:0,ETV
-rtmp://wowza3.err.ee:80/live/etvh
-#EXTINF:0,ETV2
-rtmp://wowza3.err.ee:80/live/etv2h
-#EXTINF:0,Kanal 2
-rtmp://ingress2.cdn.mind.ee:1935/kanal2_live/_definst_/live_1
-#EXTINF:0,TV3
-rtmp://88.196.221.246:1935/bb1028/_definst_/trans.stream_576p
-#EXTINF:0,Tallinna TV
-rtmp://b4.babahh.com:1935/bbttv1/_definst_/tlntv
-#EXTINF:0,TV 6
-rtmp://88.196.221.246:1935/bb1028/_definst_/trans2_576p.stream
-#EXTINF:0,Kanal 11
-rtmp://ingress2.cdn.mind.ee:1935/kanal11_live/_definst_/live_1
-#EXTINF:0,Kanal 12
-rtmp://ingress2.cdn.mind.ee:1935/kanal12_live/_definst_/live_1
+etv 	udp://@239.3.1.106:1234 	rtmp://wowza3.err.ee:80/live/etvh
+etv2 	udp://@239.3.1.107:1234 	rtmp://wowza3.err.ee:80/live/etv2h
+etvsd 	udp://@239.3.1.1:1234 	rtmp://wowza3.err.ee:80/live/etvh
+etv2sd 	udp://@239.9.14.2:1234 	rtmp://wowza3.err.ee:80/live/etv2h
+k2 		udp://@239.3.1.2:1234
+tv3		udp://@239.3.1.3:1234
+r2 		udp://@239.3.12.101:1234 	rtmp://194.36.162.51/live/raadio2
+

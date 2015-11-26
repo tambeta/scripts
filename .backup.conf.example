@@ -11,7 +11,7 @@ EXCLUDE=''
 # duplicity backend
 
 DURL='' 						# target URL; if set, the duplicity backend is used
-DOPTS=''
+DOPTS='' 						# options for duplicity(1). If used, the normal backup process is omitted.
 
 # tar backend
 
@@ -19,7 +19,7 @@ BACKUPDIR='backups'				# default: "backup"
 PROJECTNAME=''					# last component of $WORKDIR
 BACKUPFILE=''				    # $PROJECTNAME.tar.gz
 BACKUPID=''						# BACKUP_uppercase($PROJECTNAME)
-TAROPTS=''
+TAROPTS='' 						# options for tar(1)
 EMAIL=''						# if set, tarball will be e-mailed to this address
 NOEDIT=''						# boolean; if set, editor will not be opened with README
 ROTATE=''						# rotate n backups, no standard incr. numbering, implies NOEDIT
