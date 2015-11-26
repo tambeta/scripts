@@ -134,12 +134,6 @@ and [Text::CSV](http://search.cpan.org/~makamaka/Text-CSV-1.33/lib/Text/CSV.pm).
 
 ## eesti/iptv
 
-```
-IPTV frontend. Takes the channel ID as argument. Blasts IGMP join 
-messages to the channel mcast IP to ensure that the stream doesn't cut 
-out. If the proper interface is not connected, falls back to web stream.
-```
-
 A script for watching or capturing Elion's multicast-based IPTV. Reads
 `data/iptvrc` for channel definitions. If the passed network interface seems to
 have the IPTV subnet address, attempts to open the multicast stream. To ensure
