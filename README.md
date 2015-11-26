@@ -124,6 +124,14 @@ expenditures by function, based on the groups defined in
 the arguments.
 ```
 
+What it says on the tin. Pass a CSV account statement from Swedbank and a
+statement groups file (see `data/statementgroups.example`, first column is the
+group, second column is a pattern (full Perl regexp, really) to match against
+the transaction comment or recipient). The output is a neat table of grouped
+expenditures and incomes. Requires
+[Text::ASCIITable](http://search.cpan.org/~lunatic/Text-ASCIITable-0.20/lib/Text/ASCIITable.pm)
+and [Text::CSV](http://search.cpan.org/~makamaka/Text-CSV-1.33/lib/Text/CSV.pm).
+
 ## eesti/iptv
 
 ```
@@ -132,15 +140,49 @@ messages to the channel mcast IP to ensure that the stream doesn't cut
 out. If the proper interface is not connected, falls back to web stream.
 ```
 
+A script for watching or capturing Elion's multicast-based IPTV. Reads
+`data/iptvrc` for channel definitions. If the passed network interface seems to
+have the IPTV subnet address, attempts to open the multicast stream. To ensure
+that it doesn't cut out, blasts IGMP join messages (using `nemesis`) until VLC
+is running. This should not be necessary, but it was easier to do than debug all
+possible software / hardware / router firmware issues that might have resulted
+in bad multicast group behavior - simply opening the mcast URL with VLC did not
+result in IGMP join messages reaching the ISP and the stream froze after ~3
+minutes.
+
+`iptvrc` format:
+
+* 1st column - channel ID
+* 2nd column - mcast stream URL
+* 3rd column - fallback (web) stream URL
+
+Usage:
+
+```
+iptv [-c output.mp4] [-a] [-i interface]
+```
+
+* `-i interface` - network interface to use
+* `-c filename` - dump stream to `filename` instead of opening in VLC
+* `-a` - use alternative (fallback) stream
+
+__Note:__ If you do decide to try out this script, keep in mind that it requires
+advanced knowledge of network configuration to set up. Broadly, you need to a)
+spoof a set-top box's MAC address to the desired network interface, b) set up
+the multicast route (`route add -net 224.0.0.0 netmask 240.0.0.0 dev
+interface_name`) c) force your system to use IGMPv2 d) add an `iptables` rule to
+accept multicast packets, if using the firewall. Please do not contact me about
+troubleshooting your network configuration.
+
 ## eesti/weather
 
 ```
 Without arguments, print the current temperature from 
 meteo.physic.ut.ee If -R is given, print the record temperature days 
-this year If -r is given, reverse the order (i.e. display the coldest 
-dates) If -i is given, invert minima and maxima (i.e. show warmest 
-daily minima with -R, coldest daily maxima with -Rr) -n determines the 
-number of dates to output -y determines year, current year by default
+this year. If -r is given, reverse the order (i.e. display the coldest 
+dates). If -i is given, invert minima and maxima (i.e. show warmest 
+daily minima with -R, coldest daily maxima with -Rr). -n determines the 
+number of dates to output. -y determines year, current year by default.
 ```
 
 ## perl/plckmods
