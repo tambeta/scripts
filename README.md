@@ -208,6 +208,9 @@ listing dependency modules. $* is passed to scandeps.pl. Pass -n to
 list unavailable dependencies, in such case $* is ignored.
 ```
 
+Requires
+[scandeps.pl](http://search.cpan.org/~autrijus/Module-ScanDeps-0.54/script/scandeps.pl)
+
 ## perl/plinstall
 
 ```
