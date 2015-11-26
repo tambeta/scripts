@@ -144,6 +144,12 @@ in bad multicast group behavior - simply opening the mcast URL with VLC did not
 result in IGMP join messages reaching the ISP and the stream froze after ~3
 minutes.
 
+Requires:
+
+* [nemesis](http://nemesis.sourceforge.net/)
+* [VLC](http://www.videolan.org/vlc/index.html)
+* [mplayer](http://www.mplayerhq.hu/design7/news.html) (for capturing)
+
 `iptvrc` format:
 
 * 1st column - channel ID
