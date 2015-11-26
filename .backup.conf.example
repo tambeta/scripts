@@ -1,0 +1,36 @@
+
+# Included and excluded patterns. For the duplicity backend, all included
+# patterns are prefixed by $WORKDIR, all excluded patterns by '**/'. See
+# duplicity(1) for details.
+
+FILES='.'
+EXCLUDE=''
+
+# Backend options. Modify if needed, otherwise given default values.
+
+# duplicity backend
+
+DURL='' 						# target URL; if set, the duplicity backend is used
+DOPTS=''
+
+# tar backend
+
+BACKUPDIR='backups'				# default: "backup"
+PROJECTNAME=''					# last component of $WORKDIR
+BACKUPFILE=''				    # $PROJECTNAME.tar.gz
+BACKUPID=''						# BACKUP_uppercase($PROJECTNAME)
+TAROPTS=''
+EMAIL=''						# if set, tarball will be e-mailed to this address
+NOEDIT=''						# boolean; if set, editor will not be opened with README
+ROTATE=''						# rotate n backups, no standard incr. numbering, implies NOEDIT
+
+# Functions run immediately before and after backup procedure
+
+function _backup_init() {
+	:
+}
+
+function _backup_cleanup() {
+	:
+}
+

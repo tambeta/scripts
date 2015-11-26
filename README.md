@@ -1,8 +1,35 @@
+
+This repo contains a few sundry scripts potentially useful to the general
+GNU/Linux-using public. The scripts are categorized into directories as follows:
+
+* `arch` - [Arch Linux](http://archlinux.org)-specific scripts
+* `eesti` - scripts specific to Estonian services
+* `perl` - [Perl](https://www.perl.org/)-specific scripts
+* `X` - scripts useful within a graphical user environment (X11)
+
+The root directory contains miscellaneous other scripts, `lib` currently only
+contains backends for `backup`, `data` contains configuration files.
+
 ## backup
 
-```
-See the example .backup.conf for configuration options and details.
-```
+A multi-purpose script for backing up a directory tree into a tarball or via
+[duplicity](http://duplicity.nongnu.org/). The script sources `.backup.conf`
+from the current working directory for options. See `.backup.conf.example` for a
+template and explanations of options. The tar backend supports
+
+* numbered backups (000, 001, ...)
+* rotating a fixed maximum number of backups through `logrotate`
+* e-mailing the tarball through `mutt`
+* keeping a log file for backups in README
+
+Requires:
+
+* GNU `tar` (for the tar backed)
+* `duplicity` (for the duplicity backend)
+* `logrotate` (for rotating the backups)
+* `mutt` (for e-mailing the backups)
+
+See `backup`, `lib/backup*` and `.backup.conf.example` for details.
 
 ## mp3tag
 
@@ -10,6 +37,9 @@ See the example .backup.conf for configuration options and details.
 Copy filename in the form of "artist - title.mp3" to mp3 tags, or vice 
 versa. mp3tag {-t | -f} filename [filename ...]
 ```
+
+Copy mp3 tags to the filename as `ARTIST - TITLE.mp3` (`-f`) or write the artist
+and title tags to the mp3 file based on the filename formatted as such.
 
 ## reflow
 
@@ -19,6 +49,9 @@ Intended to be used as an editor extension. The TABW constant is the
 allowed width of the pure block, i.e. only text starting from the first 
 non-space character after the hash (`#`) on a line.
 ```
+
+
+
 
 ## vid2x264
 
