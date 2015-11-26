@@ -11,7 +11,8 @@ The root directory contains miscellaneous other scripts, `lib` currently only
 contains backends for `backup`, `data` contains configuration files. The scripts
 expect a full-featured modern Linux system as their environment; standard
 requirements like `perl`, `awk`, `wget` etc. are not listed for each script.
-Many scripts can be run with no arguments, `-h` or `--help` for usage info.
+Many scripts can be run with no arguments, `-h` or `--help` for usage info. I'm
+guilty of the mortal sin of using tabs (4) instad of spaces, so beware.
 
 ## backup
 
