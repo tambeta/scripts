@@ -1,14 +1,10 @@
 ## backup
 
-From the script header:
-
 ```
 See the example .backup.conf for configuration options and details.
 ```
 
 ## mp3tag
-
-From the script header:
 
 ```
 Copy filename in the form of "artist - title.mp3" to mp3 tags, or vice 
@@ -16,8 +12,6 @@ versa. mp3tag {-t | -f} filename [filename ...]
 ```
 
 ## reflow
-
-From the script header:
 
 ```
 Script to reflow a block of comments wrapped to a given length. 
@@ -28,16 +22,12 @@ non-space character after the hash (`#`) on a line.
 
 ## vid2x264
 
-From the script header:
-
 ```
 Convert a video stream into high quality x264; by default 720p, CRF 20, 
 preset: slow.
 ```
 
 ## arch/ckfpkgs
-
-From the script header:
 
 ```
 Check whether foreign packages have become available in binary 
@@ -46,15 +36,11 @@ repositories
 
 ## arch/nongrppkgs
 
-From the script header:
-
 ```
 List explicitly-installed packages that are not part of a group
 ```
 
 ## arch/pkgdate
-
-From the script header:
 
 ```
 Output packages sorted by install date, one per line with the install 
@@ -64,16 +50,12 @@ passed on to pacman.
 
 ## arch/rqfpkgs
 
-From the script header:
-
 ```
 List foreign packages (e.g. from AUR) that are required by other 
 packages
 ```
 
 ## eesti/bank
-
-From the script header:
 
 ```
 A script to analyze a Swedbank CSV bank statement and group 
@@ -84,8 +66,6 @@ the arguments.
 
 ## eesti/iptv
 
-From the script header:
-
 ```
 IPTV frontend. Takes the channel ID as argument. Blasts IGMP join 
 messages to the channel mcast IP to ensure that the stream doesn't cut 
@@ -93,8 +73,6 @@ out. If the proper interface is not connected, falls back to web stream.
 ```
 
 ## eesti/weather
-
-From the script header:
 
 ```
 Without arguments, print the current temperature from 
@@ -107,8 +85,6 @@ number of dates to output -y determines year, current year by default
 
 ## perl/plckmods
 
-From the script header:
-
 ```
 Utility for finding all Perl files under the current directory and 
 listing dependency modules. $* is passed to scandeps.pl. Pass -n to 
@@ -117,8 +93,6 @@ list unavailable dependencies, in such case $* is ignored.
 
 ## perl/plinstall
 
-From the script header:
-
 ```
 Install Perl modules to a specific directory. Pass the prefix as the 
 first argument and any modules to install as subsequent arguments.
@@ -126,15 +100,11 @@ first argument and any modules to install as subsequent arguments.
 
 ## perl/plmodavail
 
-From the script header:
-
 ```
 Check availability of a Perl module
 ```
 
 ## perl/plstordmp
-
-From the script header:
 
 ```
 Dump the contents of a Storable serialized in a file, file name passed 
@@ -142,8 +112,6 @@ as the command line argument
 ```
 
 ## X/ckfs
-
-From the script header:
 
 ```
 Check if there are full-screen windows with title matching a pattern, 
@@ -153,8 +121,6 @@ frequent cron job or from a periodic script.
 
 ## X/pidginctl
 
-From the script header:
-
 ```
 Command-line control of Pidgin via D-Bus. Currently toggles available / 
 offline mode.
@@ -162,16 +128,12 @@ offline mode.
 
 ## X/spotifyctl
 
-From the script header:
-
 ```
 Command-line control of Spotify. Pass "play", "pause", "next", "prev" 
 or "previous" as the argument.
 ```
 
 ## X/windowdim
-
-From the script header:
 
 ```
 Resize a window (partially) matching the title.
