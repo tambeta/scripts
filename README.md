@@ -243,6 +243,39 @@ Command-line control of Pidgin via D-Bus. Currently toggles available /
 offline mode.
 ```
 
+## X/remoted.pl
+
+A remote control daemon leveraging the power of [LIRC](http://www.lirc.org/) to
+turn your Android device into a remote for your machine using a client such as
+[this
+one](https://play.google.com/store/apps/details?id=com.chham.lirc_client&hl=en).
+
+Usage:
+
+* Set up LIRC on your machine. You may use the [generic remote
+  definition](https://bpaste.net/raw/e1c14b4acbfc), either way, `remoted.pl`
+  expects `devinput` as the remote's ID.
+* Set up the
+  [client](https://play.google.com/store/apps/details?id=com.chham.lirc_client&hl=en)
+  on your android device, download the `devinput` definition from your LIRC
+  server and configure your remote. Note: make sure to use SIMULATE mode.
+* Create an action mapping file, see `data/remotedrc` as an example. This either
+  maps actions to a command to run (two fields) *or* invokes an internal
+  function (three or more fields). In the latter form, the second field is the
+  name of the function in angle brackets and the rest are its arguments. Two
+  functions are available:
+
+  * `<mpris>` - Control VLC via [D-Bus /
+	MPRIS](http://specifications.freedesktop.org/mpris-spec/latest/). See the
+	[specification](http://specifications.freedesktop.org/mpris-spec/latest/Player_Interface.html)
+	for details; methods for most expected actions (play, stop, seek, etc.) are available.
+  * `<vlc_start>` - Start VLC and open the passed URI (3rd field). If VLC is
+	already running, no new instance is spawned.
+* Run `remoted.pl`, passing the action mapping file as a parameter. You should
+  be able to control VLC and invoke any other actions via your Android device
+  now.
+
+
 ## X/spotifyctl
 
 ```
