@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Resize a window (partially) matching the title.
+# Resize a window matching (regex) the title. Only on-screen windows
+# are considered.
 
 [ $3 ] || {
 	echo "Usage: windowdim window_title width height" >&2
@@ -10,10 +11,25 @@
 TITLE=$1
 W=$2
 H=$3
-WID=$(xdotool search --onlyvisible --title "$TITLE")
+
+WROOT=$(xwininfo -root | fgrep Width | awk '{print $2}')
+HROOT=$(xwininfo -root | fgrep Height | awk '{print $2}')
+WID=$(
+	xdotool search --onlyvisible --name "$TITLE" |\
+	xargs -n1 xdotool getwindowgeometry |\
+	awk '
+		/Window/   { WID=$2 }
+		/Position/ { split($2, XY, ","); X=XY[1]; Y=XY[2]; }
+		/Geometry/ {
+			split($2, WH, "x"); W=WH[1]; H=WH[2];
+			if (X+W > 1 && Y+H > 1 && X < '$WROOT' && Y < '$HROOT')
+				print WID;
+		}
+	'
+)
 N=$(echo $WID | tr " " "\n" | wc -l)
 
-[ "$WID" ] || {
+[ -z "$WID" ] && {
 	echo "Cannot find window with title \"$TITLE\"" >&2
 	exit
 }
@@ -23,6 +39,4 @@ N=$(echo $WID | tr " " "\n" | wc -l)
 }
 
 xdotool windowsize $WID $W $H
-
-
 
