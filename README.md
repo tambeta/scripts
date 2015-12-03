@@ -292,3 +292,5 @@ or "previous" as the argument.
 Resize a window (partially) matching the title.
 ```
 
+Requires `xdotool`, `xwininfo`.
+
