@@ -55,7 +55,10 @@ R2_ROOT_URL = "http://r2.err.ee"
 API_ROOT_URL = R2_ROOT_URL + "/api/loader"
 IMG_ROOT_URL = "http://static.err.ee/gridfs"
 
-
+LOGLEVEL_DEFAULT = 0
+LOGLEVEL_DEBUG = 1
+LOGLEVEL_INFO = 2
+VERBOSITY = LOGLEVEL_DEFAULT
 
 # API access routines
 
@@ -73,24 +76,37 @@ def get_last_showdate(showname):
 	tree = json.load(f)
 	return parse_date(tree[0]["AirDate"])
 
-def get_show_attrs(showname, date):
+def get_show_attrs(showname, date, partial_name):
 
 	# Return the canonical name, GUID and artwork URL
 	# of a show on a given date.
 
-	f = urllib.urlopen(
-		API_ROOT_URL + "/GetTimeLineDay/" +
+	url = \
+		API_ROOT_URL + "/GetTimeLineDay/" + \
 		"?year=" + str(date.year) + "&month=" + str(date.month) + "&day=" + str(date.day)
-	)
-
+	
+	debug("Fetching show attributes from " + url, LOGLEVEL_DEBUG)
+	
+	f = urllib.urlopen(url)
 	tree = json.load(f)
 	lname = showname.lower()
 	sid = None
 	arturl = None
 	artopts = None
-
+	
+	def is_name_match(header_entry):
+		header_entry = header_entry.lower()
+		
+		if (partial_name):
+			return (True if header_entry.find(lname) != -1 else False)
+		else:
+			return header_entry == lname
+	
 	for i in tree:
-		if (i["Header"].lower() == lname):
+		header_entry = i["Header"];
+		debug("\tHeader entry: " + header_entry, LOGLEVEL_INFO)
+		
+		if (is_name_match(header_entry)):
 			imgurl = None
 
 			if (i["Image"]):
@@ -120,7 +136,7 @@ def get_show_streams(showname, sid):
 	streams = []
 	url = R2_ROOT_URL + "/v/" + showname + "/saated/" + sid
 	f = urllib.urlopen(url)
-	soup = BeautifulSoup(f)
+	soup = BeautifulSoup(f, "html.parser")
 	
 	for stag in soup.findAll("script"):
 		suris = re.findall("media\.err\.ee.*?m4a", str(stag))
@@ -260,6 +276,16 @@ def parse_command_line():
 		help="quick sanity test of the pipeline, download 10 first seconds only"
 	)
 	parser.add_argument(
+		"-p", "--partial-name",
+		action="store_true",
+		help="allow partial match for show name"
+	)
+	parser.add_argument(
+		"-v", "--verbose",
+		action="count",
+		help="increase verbosity"
+	)	
+	parser.add_argument(
 		"-D", "--mp4-dir", default=".",
 		help="mp4 (unmodified stream) output directory"
 	)
@@ -290,7 +316,9 @@ def gather_outputs(args):
 
 	return o
 
-def debug(msg):
+def debug(msg, verbosity=0):
+	if (verbosity > VERBOSITY):
+		return	
 	sys.stderr.write(msg)
 	sys.stderr.write("\n")
 
@@ -316,13 +344,18 @@ def list_uniq(l):
 	
 	return r
 
-def main():
+def main():	
 	args = parse_command_line()
 	showname = args.showname.strip()
 	streams = None
 	infns = None
+	outputs = None
+	
+	global VERBOSITY
+	VERBOSITY = args.verbose or 0
+	
 	outputs = gather_outputs(args)
-
+	
 	if (args.skip):
 		infns = [args.skip]
 	if (args.date):
@@ -331,7 +364,7 @@ def main():
 		showdate = get_last_showdate(showname)
 
 	(showname, sid, show_imgurl) = \
-		get_show_attrs(showname, showdate)
+		get_show_attrs(showname, showdate, args.partial_name)
 	debug("Show name:\t" + showname)
 	debug("Show date:\t" + str(showdate))
 	debug("Show ID:\t" + sid)
