@@ -31,6 +31,8 @@ API = "http://r2.err.ee/api/loader"
 [3] http://r2.err.ee/v/$SHOW/saated/$ID
 """
 
+from __future__ import print_function
+
 import argparse
 import calendar
 import datetime
@@ -58,7 +60,6 @@ IMG_ROOT_URL = "http://static.err.ee/gridfs"
 LOGLEVEL_DEFAULT = 0
 LOGLEVEL_DEBUG = 1
 LOGLEVEL_INFO = 2
-VERBOSITY = LOGLEVEL_DEFAULT
 
 # API access routines
 
@@ -67,13 +68,16 @@ def get_last_showdate(showname):
 	# Return last airdate of a show.
 
 	showid = re.sub(r"\s+", "", showname)
-
-	f = urllib.urlopen(
-		API_ROOT_URL + "/airtimesforprogram/" +
+	url = \
+		API_ROOT_URL + "/airtimesforprogram/" + \
 		showid + "?channel=raadio2&ShowAll=False"
-	)
 
+	debug("Loading air times from " + url, LOGLEVEL_DEBUG)
+	f = urllib.urlopen(url)
 	tree = json.load(f)
+
+	if ((type(tree) is not list) or len(tree) == 0):
+		err("Did not retrieve any show times for \"" + showname + "\"")
 	return parse_date(tree[0]["AirDate"])
 
 def get_show_attrs(showname, date, partial_name):
@@ -84,28 +88,28 @@ def get_show_attrs(showname, date, partial_name):
 	url = \
 		API_ROOT_URL + "/GetTimeLineDay/" + \
 		"?year=" + str(date.year) + "&month=" + str(date.month) + "&day=" + str(date.day)
-	
+
 	debug("Fetching show attributes from " + url, LOGLEVEL_DEBUG)
-	
+
 	f = urllib.urlopen(url)
 	tree = json.load(f)
 	lname = showname.lower()
 	sid = None
 	arturl = None
 	artopts = None
-	
+
 	def is_name_match(header_entry):
 		header_entry = header_entry.lower()
-		
+
 		if (partial_name):
 			return (True if header_entry.find(lname) != -1 else False)
 		else:
 			return header_entry == lname
-	
+
 	for i in tree:
 		header_entry = i["Header"];
 		debug("\tHeader entry: " + header_entry, LOGLEVEL_INFO)
-		
+
 		if (is_name_match(header_entry)):
 			imgurl = None
 
@@ -132,18 +136,20 @@ def get_show_streams(showname, sid):
 
 	# Return the RTMP stream URLs of a show with a
 	# given GUID.
-	
+
 	streams = []
 	url = R2_ROOT_URL + "/v/" + showname + "/saated/" + sid
 	f = urllib.urlopen(url)
 	soup = BeautifulSoup(f, "html.parser")
-	
+
+	debug("Scraping for show streams from " + url, LOGLEVEL_DEBUG)
+
 	for stag in soup.findAll("script"):
 		suris = re.findall("media\.err\.ee.*?m4a", str(stag))
 		for suri in (suris):
 			suri = "rtmp://" + re.sub("r2/@", "r2/", suri);
 			streams.append(suri)
-	
+
 	streams = list_uniq(streams)
 
 	if (len(streams) < 1):
@@ -152,7 +158,7 @@ def get_show_streams(showname, sid):
 
 # Audio retrieval and packaging routines
 
-def download_audio(streams, quick_test=False):
+def download_audio(streams, retries, quick_test=False):
 
 	# Dump raw RTMP streams into temporary files.
 
@@ -160,14 +166,31 @@ def download_audio(streams, quick_test=False):
 
 	for s in streams:
 		d = tempfile.NamedTemporaryFile(suffix='.m4a')
-		args = ["rtmpdump", "-v", "-o", d.name, "-r", s]
+		args = ["rtmpdump", "-v", "-#", "-o", d.name, "-r", s]
+		resume_flag = False
+
 		debug("Dumping " + s + " to " + d.name)
 
 		if (quick_test):
 			args += ["-B", "10"]  # call instead check_call because
 			subprocess.call(args) # rtmpdump returns non-zero w/ -B
 		else:
-			subprocess.check_call(args)
+			for i in range(0, retries):
+				if (i > 0):
+					debug("Retrying (" + str(i+1) + " / " + str(retries) + ")")
+					if (not resume_flag):
+						args += ["-e"]
+						resume_flag = True
+
+				try:
+					subprocess.check_call(args)
+				except subprocess.CalledProcessError as e:
+					if (e.returncode == 2 and i < (retries-1)): # incomplete transfer
+						continue
+					else:
+						err("Failed fetching stream after " + str(retries) + " times", e)
+				break
+
 		dumps.append(d)
 
 	return dumps
@@ -238,14 +261,14 @@ def package_mp3(infn, outfn, title, cover):
 	tags.add(mutagen.id3.TPE1(encoding=3, text="R2"))
 	tags.add(mutagen.id3.APIC(encoding=3, type=3, data=cover))
 	tags.save()
-	
+
 def package_ogg(infn, outfn, title, cover):
-	
+
 	# Note: cover currently ignored for OGG Vorbis output
-	
+
 	subprocess.check_call(
 		["ffmpeg", "-y", "-i", infn, "-codec:a", "libvorbis", "-qscale:a", "6", outfn])
-	
+
 	ogg = mutagen.oggvorbis.OggVorbis(outfn)
 	ogg.tags["artist"] = u"R2"
 	ogg.tags["title"] = title
@@ -278,13 +301,17 @@ def parse_command_line():
 	parser.add_argument(
 		"-p", "--partial-name",
 		action="store_true",
-		help="allow partial match for show name"
+		help="allow partial match for show name; only makes sense with -d"
 	)
 	parser.add_argument(
 		"-v", "--verbose",
 		action="count",
 		help="increase verbosity"
-	)	
+	)
+	parser.add_argument(
+		"-r", "--retry", type=int, default=5,
+		help="number of retries in case of incomplete transfers, default 5"
+	)
 	parser.add_argument(
 		"-D", "--mp4-dir", default=".",
 		help="mp4 (unmodified stream) output directory"
@@ -317,10 +344,9 @@ def gather_outputs(args):
 	return o
 
 def debug(msg, verbosity=0):
-	if (verbosity > VERBOSITY):
-		return	
-	sys.stderr.write(msg)
-	sys.stderr.write("\n")
+	if (verbosity > (debug.verbosity or 0)):
+		return
+	print(msg, file=sys.stderr)
 
 def warn(msg, is_error=0):
 	if (is_error):
@@ -329,33 +355,41 @@ def warn(msg, is_error=0):
 		msg = "WARNING: " + msg
 	debug(msg)
 
-def err(msg):
+def err(msg, e=None):
+
+	# If exception `e` is passed, raise it instead of sys.exit-ing
+
 	warn(msg, is_error=1)
-	sys.exit(1)
+
+	if (e == None):
+		sys.exit(1)
+	else:
+		raise e
+
+def debug_set_verbosity(v):
+	debug.verbosity = v;
 
 def list_uniq(l):
 	s = set()
 	r = []
-	
+
 	for i in (l):
 		if (i not in s):
 			r.append(i)
 			s.add(i)
-	
+
 	return r
 
-def main():	
+def main():
 	args = parse_command_line()
 	showname = args.showname.strip()
 	streams = None
 	infns = None
 	outputs = None
-	
-	global VERBOSITY
-	VERBOSITY = args.verbose or 0
-	
+
+	debug_set_verbosity(args.verbose)
 	outputs = gather_outputs(args)
-	
+
 	if (args.skip):
 		infns = [args.skip]
 	if (args.date):
@@ -373,7 +407,7 @@ def main():
 	if (not infns):
 		streams = get_show_streams(showname, sid)
 		debug("Stream URLs:\t" + str(streams))
-		infns = download_audio(streams, args.quick_test)
+		infns = download_audio(streams, args.retry, args.quick_test)
 	package_audio(showname, showdate, show_imgurl, infns, outputs)
 
 main()
