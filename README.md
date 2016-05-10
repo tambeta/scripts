@@ -135,19 +135,13 @@ and [Text::CSV](http://search.cpan.org/~makamaka/Text-CSV-1.33/lib/Text/CSV.pm).
 
 ## eesti/iptv
 
-A script for watching or capturing Elion's multicast-based IPTV. Reads
-`data/iptvrc` for channel definitions. If the passed network interface seems to
-have the IPTV subnet address, attempts to open the multicast stream. To ensure
-that it doesn't cut out, blasts IGMP join messages (using `nemesis`) until VLC
-is running. This should not be necessary, but it was easier to do than debug all
-possible software / hardware / router firmware issues that might have resulted
-in bad multicast group behavior - simply opening the mcast URL with VLC did not
-result in IGMP join messages reaching the ISP and the stream froze after ~3
-minutes.
+A script for watching or capturing Elion's multicast-based IPTV. Reads `data/iptvrc` for channel 
+definitions.  If the passed network interface is on IPTV_NET, attempt to open the multicast stream, 
+otherwise fall back to the web stream. For use with the new router firmware (>=8.C.D.9); see older 
+versions (<2016-05) for use with the separate IPTV subnet.
 
 Requires:
 
-* [nemesis](http://nemesis.sourceforge.net/)
 * [VLC](http://www.videolan.org/vlc/index.html)
 * [mplayer](http://www.mplayerhq.hu/design7/news.html) (for capturing)
 
@@ -167,12 +161,10 @@ iptv [-c output.mp4] [-a] [-i interface]
 * `-c filename` - dump stream to `filename` instead of opening in VLC
 * `-a` - use alternative (fallback) stream
 
-__Note:__ If you do decide to try out this script, keep in mind that it requires
-advanced knowledge of network configuration to set up. Broadly, you need to a)
-spoof a set-top box's MAC address to the desired network interface, b) set up
-the multicast route (`route add -net 224.0.0.0 netmask 240.0.0.0 dev
-interface_name`) c) force your system to use IGMPv2 d) add an `iptables` rule to
-accept multicast packets, if using the firewall. Please do not contact me about
+__Note:__ This script possibly requires one or more of the following to use: a) spoof a set-top 
+box's MAC address to the desired network interface, b) set up the multicast route (`route add -net 
+224.0.0.0 netmask 240.0.0.0 dev interface_name`) c) force your system to use IGMPv2 d) add an 
+`iptables` rule to accept multicast packets, if using the firewall. Please do not contact me about 
 troubleshooting your network configuration.
 
 ## eesti/r2get.py

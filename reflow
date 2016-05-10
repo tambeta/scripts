@@ -121,7 +121,7 @@ sub custom_attrlist {
 	# Detect
 	
 	return undef 
-		unless($p =~ /\s*\w+\s+-/);
+		unless($p =~ /^\s*\w+\s+-/);
 	
 	# Collect attribute - description pairs
 	

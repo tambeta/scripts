@@ -63,11 +63,11 @@ LOGLEVEL_INFO = 2
 
 # API access routines
 
-def get_last_showdate(showname):
+def get_last_showdate(show_id):
 
 	# Return last airdate of a show.
 
-	showid = re.sub(r"\s+", "", showname)
+	showid = re.sub(r"\s+", "", show_id)
 	url = \
 		API_ROOT_URL + "/airtimesforprogram/" + \
 		showid + "?channel=raadio2&ShowAll=False"
@@ -77,10 +77,10 @@ def get_last_showdate(showname):
 	tree = json.load(f)
 
 	if ((type(tree) is not list) or len(tree) == 0):
-		err("Did not retrieve any show times for \"" + showname + "\"")
+		err("Did not retrieve any show times for \"" + show_id + "\"")
 	return parse_date(tree[0]["AirDate"])
 
-def get_show_attrs(showname, date, partial_name):
+def get_show_attrs(show_id, date, partial_name):
 
 	# Return the canonical name, GUID and artwork URL
 	# of a show on a given date.
@@ -93,8 +93,7 @@ def get_show_attrs(showname, date, partial_name):
 
 	f = urllib.urlopen(url)
 	tree = json.load(f)
-	lname = showname.lower()
-	sid = None
+	lname = show_id.lower()
 	arturl = None
 	artopts = None
 
@@ -112,6 +111,7 @@ def get_show_attrs(showname, date, partial_name):
 
 		if (is_name_match(header_entry)):
 			imgurl = None
+			pageurl = None
 
 			if (i["Image"]):
 				imgurl = ""
@@ -120,32 +120,36 @@ def get_show_attrs(showname, date, partial_name):
 					imgurl += i["ImageResizerOptions"]
 				else:
 					imgurl += "?width=1200"
+			
+			if (i["Url"]):
+				pageurl = i["Url"]
+			else:
+				raise KeyError("Cannot get attribute \"Url\" for \"" + show_id + "\"")
 
 			return (
 				i["Header"],
-				i["Id"],
+				pageurl,
 				imgurl
 			)
 
 	raise KeyError(
-		"Cannot get show attributes for \"" + showname +
+		"Cannot get show attributes for \"" + show_id +
 		"\" on " + str(date)
 	)
 
-def get_show_streams(showname, sid):
+def get_show_streams(url):
 
 	# Return the RTMP stream URLs of a show with a
 	# given GUID.
 
 	streams = []
-	url = R2_ROOT_URL + "/v/" + showname + "/saated/" + sid
 	f = urllib.urlopen(url)
 	soup = BeautifulSoup(f, "html.parser")
 
 	debug("Scraping for show streams from " + url, LOGLEVEL_DEBUG)
 
 	for stag in soup.findAll("script"):
-		suris = re.findall("media\.err\.ee.*?m4a", str(stag))
+		suris = re.findall("media\.err\.ee.*?RR.*?m4a", str(stag))
 		for suri in (suris):
 			suri = "rtmp://" + re.sub("r2/@", "r2/", suri);
 			streams.append(suri)
@@ -153,7 +157,7 @@ def get_show_streams(showname, sid):
 	streams = list_uniq(streams)
 
 	if (len(streams) < 1):
-		raise RuntimeError("Cannot retrieve any stream URLs for \"" + showname + "\"")
+		raise RuntimeError("Cannot retrieve any stream URLs from " + url)
 	return streams
 
 # Audio retrieval and packaging routines
@@ -195,14 +199,14 @@ def download_audio(streams, retries, quick_test=False):
 
 	return dumps
 
-def package_audio(showname, showdate, show_imgurl, infns, outputs):
+def package_audio(show_id, showname, showdate, show_imgurl, infns, outputs):
 
 	# Package dumped raw RTMP stream into a proper m4a (aka ipod)
 	# container, apply tags including cover art. infns can be a list of
 	# strings (file names) or a list of NamedTemporaryFiles. outputs is
 	# a dict of output ID - directory mappings.
 
-	showfn_prefix = re.sub(r"\s+", "-", showname.lower())
+	showfn_prefix = re.sub(r"\s+", "-", show_id.lower())
 
 	# Fetch cover image
 
@@ -324,7 +328,7 @@ def parse_command_line():
 		"--ogg-dir", default=None,
 		help="ogg output directory"
 	)
-	parser.add_argument("showname")
+	parser.add_argument("show_id")
 	return parser.parse_args()
 
 def gather_outputs(args):
@@ -346,7 +350,13 @@ def gather_outputs(args):
 def debug(msg, verbosity=0):
 	if (verbosity > (debug.verbosity or 0)):
 		return
-	print(msg, file=sys.stderr)
+	try:
+		print(msg, file=sys.stderr)
+	except UnicodeEncodeError as e:
+		err(
+			"Please set PYTHONIOENCODING=UTF-8 to avoid encoding errors " +
+			"in case of badly detected or non-Unicode stderr", e
+		)
 
 def warn(msg, is_error=0):
 	if (is_error):
@@ -381,8 +391,12 @@ def list_uniq(l):
 	return r
 
 def main():
+	
+	# show_id is the identifier from the command line, possibly
+	# partial, used for file names. show_name is the name from R2.
+	
 	args = parse_command_line()
-	showname = args.showname.strip()
+	show_id = args.show_id.strip()
 	streams = None
 	infns = None
 	outputs = None
@@ -395,20 +409,19 @@ def main():
 	if (args.date):
 		showdate = parse_date(args.date)
 	else:
-		showdate = get_last_showdate(showname)
+		showdate = get_last_showdate(show_id)
 
-	(showname, sid, show_imgurl) = \
-		get_show_attrs(showname, showdate, args.partial_name)
+	(showname, show_url, show_imgurl) = \
+		get_show_attrs(show_id, showdate, args.partial_name)
 	debug("Show name:\t" + showname)
 	debug("Show date:\t" + str(showdate))
-	debug("Show ID:\t" + sid)
 	debug("Image URL:\t" + show_imgurl)
 
 	if (not infns):
-		streams = get_show_streams(showname, sid)
+		streams = get_show_streams(show_url)
 		debug("Stream URLs:\t" + str(streams))
 		infns = download_audio(streams, args.retry, args.quick_test)
-	package_audio(showname, showdate, show_imgurl, infns, outputs)
+	package_audio(show_id, showname, showdate, show_imgurl, infns, outputs)
 
 main()
 
