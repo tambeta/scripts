@@ -53,8 +53,8 @@ import urlparse
 
 from bs4 import BeautifulSoup
 
-R2_ROOT_URL = "http://r2.err.ee"
-API_ROOT_URL = R2_ROOT_URL + "/api/loader"
+AIRTIMES_API_URL = "http://r2.err.ee/api/loader/airtimesforprogram/"
+SHOW_API_URL = "http://otse.err.ee/api/schedule/"
 IMG_ROOT_URL = "http://static.err.ee/gridfs"
 
 LOGLEVEL_DEFAULT = 0
@@ -69,7 +69,7 @@ def get_last_showdate(show_id):
 
 	showid = re.sub(r"\s+", "", show_id)
 	url = \
-		API_ROOT_URL + "/airtimesforprogram/" + \
+		AIRTIMES_API_URL + \
 		showid + "?channel=raadio2&ShowAll=False"
 
 	debug("Loading air times from " + url, LOGLEVEL_DEBUG)
@@ -86,8 +86,8 @@ def get_show_attrs(show_id, date, partial_name):
 	# of a show on a given date.
 
 	url = \
-		API_ROOT_URL + "/GetTimeLineDay/" + \
-		"?year=" + str(date.year) + "&month=" + str(date.month) + "&day=" + str(date.day)
+		SHOW_API_URL + "GetTimelineDay?channel=r2" + \
+		"&year=" + str(date.year) + "&month=" + str(date.month) + "&day=" + str(date.day)
 
 	debug("Fetching show attributes from " + url, LOGLEVEL_DEBUG)
 

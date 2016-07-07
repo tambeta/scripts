@@ -47,9 +47,10 @@ and title tags to the mp3 file (`-t`) based on the filename formatted as such. R
 
 ## reflow
 
-A Perl script accepting a block of comments (lines starting with `#` or `//`)
-on its standard input and piping a nicely formatted result to its standard
-output.  Use as an editor extension (Geany, vim, ...). Requires
+A Perl script accepting a block of comments (lines starting with `#` or `//`;
+also handles Python docstrings) on its standard input and piping a nicely
+formatted result to its standard output.  Use as an editor extension (Geany,
+vim, ...). Requires
 [Text::Autoformat](http://search.cpan.org/~neilb/Text-Autoformat-1.73/lib/Text/Autoformat.pm)
 and pipes the cleaned input through its main routine.  As an extended feature,
 supports formatting argument list documentation, i.e.
@@ -87,6 +88,15 @@ hardcoded profile. Available profiles are currently `720high` and `480med`.
 Usage example:
 
 `vid2x264 -i input.mp4 -p 720high output.mkv`
+
+## youtube2mp3
+
+```
+Convert a Youtube video or playlist specified by a passed URL to mp3, use
+mp3tag to write ID3 tags. Arguments are passed to youtube-dl.
+```
+
+Requires `youtube-dl` and `mp3tag` (see above) on `$PATH`.
 
 ## arch/ckfpkgs
 

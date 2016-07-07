@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Convert a Youtube video or playlist specified by a passed URL to mp3, use
+# mp3tag to write ID3 tags. Arguments are passed to youtube-dl.
+
+TEEFN=/tmp/youtube2mp3-$RANDOM
+
+youtube-dl -x \
+	--audio-format=mp3 --embed-thumbnail --audio-quality=2 \
+	-o '%(title)s.%(ext)s' $@ | tee $TEEFN
+
+cat $TEEFN | perl -nle 'print quotemeta($1) if /Destination:\s*(.*?\.mp3)/' | \
+	xargs -I'{}' mp3tag -t '{}'
+rm $TEEFN
+

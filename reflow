@@ -1,9 +1,10 @@
 #!/usr/bin/perl
 
-# Script to reflow a block of comments wrapped to a given length.  Intended to
-# be used as an editor extension. Pass the allowed width of the pure block,
-# i.e. only text starting from the first non-space character after the hash
-# (`#`) on a line; 72 by default.
+# Script to reflow a block of comments wrapped to a given length. Intended
+# to be used as an editor extension. Pass the allowed width of the pure
+# block, i.e. only text starting from the first non-space character after
+# the comment symbol on a line, 72 by default. Also handles blocks with no
+# detected line comment symbol, and Python docstrings.
 
 use strict;
 use warnings;
@@ -30,22 +31,25 @@ sub main {
 	my $pure = "";
 	my $reflow;
 	my $comment;
+	my $padding;
+	my $output = "";
 	my $w = $ARGV[0] || W;
 	
-	# Determine the whitespace prefix and extract the 
-	# pure paragraph to be reformatted
+	# Determine the whitespace prefix and extract the pure
+	# paragraph to be reformatted
 	
 	while (<STDIN>) {
 		my $len;
 		my $str;
 
 		chomp;
-		next unless(/^(\s*)(#|\/\/)\s*(.*)$/);
+		next unless(/^(\s*)(#|\/\/|)\s*(.*)$/);
 
 		$white = $1
 			unless(defined($white));
 		$comment = $2;
 		$pure .= "$3\n";
+		$padding = ($comment ? " " : "");
 	}
 
 	# Autoformat; force buggy module's warnings to 
@@ -76,11 +80,27 @@ sub main {
 		substr($reflow, $start, length($p), $fp);
 	}
 	
-	# Print formatted result
+	# Gather formatted result, pass through final output handler
 	
-	foreach (split(/\n/, $reflow)) {
-		print "${white}${comment} $_\n";
+	$output .= "${white}${comment}${padding}$_\n"
+		foreach (split(/\n/, $reflow));	
+	print format_output($output);
+}
+
+sub format_output {
+	
+	# Final output formatting. Currently only handles Python
+	# docstrings.
+	
+	my ($output) = @_;
+	
+	if ($output =~ /^(\s*)"""/ || $output =~ /^(\s*).*"""\s*$/m) {
+		my $padding = $1;
+		$output =~ s/^(\s*)"""\s*/$padding""" /;
+		$output =~ s/\s*"""\s*$/\n$padding"""\n/;
 	}
+	
+	$output;
 }
 
 # Custom paragraph handling
@@ -120,7 +140,7 @@ sub custom_attrlist {
 	
 	# Detect
 	
-	return undef 
+	return undef
 		unless($p =~ /^\s*\w+\s+-/);
 	
 	# Collect attribute - description pairs
