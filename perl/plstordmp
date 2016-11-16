@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
-# Dump the contents of a Storable serialized in a file, 
-# file name passed as the command line argument
+# Dump the contents of Storables serialized in a file, file names passed as
+# command line arguments
 
 use warnings;
 use strict;
@@ -14,16 +14,21 @@ sub dmp {
 }
 
 sub main {
-	my $fn = $ARGV[0];
-	my $ref;
+	my @filenames = @ARGV;
 
 	die("Pass file name as an argument\n")
-		unless($fn);
-	die("File not accessible\n")
-		unless(-r $fn);
-	die("Storable::retrieve didn't return a valid reference\n")
-		unless($ref = Storable::retrieve($fn));
-	dmp($ref);
+		unless(@filenames);
+
+	foreach my $fn (@filenames) {
+		my $ref;
+		
+		die("File not accessible\n")
+			unless(-r $fn);
+		die("Storable::retrieve didn't return a valid reference\n")
+			unless($ref = Storable::retrieve($fn));
+		dmp($ref);
+	}
+
 	1;
 }
 

@@ -139,21 +139,38 @@ def get_show_attrs(show_id, date, partial_name):
 
 def get_show_streams(url):
 
-	# Return the RTMP stream URLs of a show with a
-	# given GUID.
+	# Return the RTMP stream URLs of a show with a given GUID. Attempts to
+	# scrape for "RR.*m4a" streams first; if none found, resorts to any
+	# *.m4a streams.
 
 	streams = []
 	f = urllib.urlopen(url)
 	soup = BeautifulSoup(f, "html.parser")
-
+	
+	# Helper routine for tight / loose condition
+	
+	def find_streams(soup, tightmatch):
+		found_streams = []
+		tightmatch = r".*?RR" if tightmatch else ""
+		
+		for stag in soup.findAll("script"):
+			suris = re.findall(r"media\.err\.ee" + tightmatch + ".*?m4a", str(stag))
+			
+			for suri in (suris):
+				suri = "rtmp://" + re.sub("r2/@", "r2/", suri);
+				found_streams.append(suri)
+		
+		return found_streams
+	
+	# Scrape the DOM
+	
 	debug("Scraping for show streams from " + url, LOGLEVEL_DEBUG)
-
-	for stag in soup.findAll("script"):
-		suris = re.findall("media\.err\.ee.*?RR.*?m4a", str(stag))
-		for suri in (suris):
-			suri = "rtmp://" + re.sub("r2/@", "r2/", suri);
-			streams.append(suri)
-
+	streams = find_streams(soup, True)
+	
+	if (not len(streams)):
+		debug("Cannot find any RR* streams, attempting to scrape any streams", LOGLEVEL_DEBUG)
+		streams = find_streams(soup, False)
+	
 	streams = list_uniq(streams)
 
 	if (len(streams) < 1):
@@ -176,7 +193,7 @@ def download_audio(streams, retries, quick_test=False):
 		debug("Dumping " + s + " to " + d.name)
 
 		if (quick_test):
-			args += ["-B", "10"]  # call instead check_call because
+			args += ["-B", "30"]  # call instead check_call because
 			subprocess.call(args) # rtmpdump returns non-zero w/ -B
 		else:
 			for i in range(0, retries):
@@ -300,7 +317,7 @@ def parse_command_line():
 	parser.add_argument(
 		"-q", "--quick-test",
 		action="store_true",
-		help="quick sanity test of the pipeline, download 10 first seconds only"
+		help="quick sanity test of the pipeline, download 30 first seconds only"
 	)
 	parser.add_argument(
 		"-p", "--partial-name",

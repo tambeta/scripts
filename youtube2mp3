@@ -5,7 +5,7 @@
 
 TEEFN=/tmp/youtube2mp3-$RANDOM
 
-youtube-dl -x \
+youtube-dl -x -i \
 	--audio-format=mp3 --embed-thumbnail --audio-quality=2 \
 	-o '%(title)s.%(ext)s' $@ | tee $TEEFN
 
