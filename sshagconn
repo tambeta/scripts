@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Initialize infrastructure for convenient Git(Hub|Lab) SSH authentication.
+# Connects to a running ssh-agent instance or launches a new one. Adds the key
+# file if necessary. Meant to run from an alias sourcing the output of this
+# script.
+
+SCRIPTNAME=$(basename $0)
+KEYFILE=${1:-~/.ssh/git.key}
+KEYFILE_BASENAME=$(basename $KEYFILE)
+
+function err {
+	echo "$SCRIPTNAME error: $1" >&2
+	exit 1
+}
+
+# If multiple agents are running, kill those and bail out. This should not
+# generally happen. If none are running, launch a new instance.
+
+if [[ $(pgrep ssh-agent | wc -l) -gt 1 ]]; then
+	pkill ssh-agent
+	err "Multiple ssh-agents running, attempting to kill. Try again."
+elif [[ -z $(pgrep ssh-agent) ]]; then
+	ssh-agent > /dev/null
+fi
+
+# Connect to a ssh-agent instance and add key if necessary. Echo variables to
+# export as ssh-agent does.
+
+APID=$(pgrep ssh-agent | head -n1)
+SOCKET=$(find /tmp/ssh-* -name "agent.*" -type s | head -n1)
+
+[[ -z "$APID" ]] && err "Cannot get PID of ssh-agent."
+[[ -z "$SOCKET" ]] && err "Cannot get socket name of ssh-agent."
+
+export SSH_AUTH_SOCK=$SOCKET
+export SSH_AGENT_PID=$APID
+
+[[ -z "$(ssh-add -l | fgrep $KEYFILE_BASENAME)" ]] && \
+	ssh-add $KEYFILE
+
+echo "export SSH_AUTH_SOCK=$SOCKET"
+echo "export SSH_AGENT_PID=$APID"
+

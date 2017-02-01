@@ -1,20 +1,25 @@
 #!/bin/bash
 
 # Utility for finding all Perl files under the current directory and listing
-# dependency modules. $* is passed to scandeps.pl. Pass -n to list unavailable
-# dependencies, in such case $* is ignored.
+# direct dependency modules, i.e. omitting depencencies of dependencies. Pass
+# -n to list unavailable dependencies. Pass -v for verbose output.
+
+while getopts "hnv" OPT; do
+	case $OPT in
+		h ) USAGE=1 ;;
+		n ) LIST_NONPRESENT=1  ;;
+		v ) VERBOSE=1  ;;
+	esac
+done
 
 # Usage
 
-if [[ $1 == "--help" ]]; then
-	echo -e "Usage: $0 {-n | args_to_scandeps}\n"
-	echo -e "Examples:\n"
-	echo    "plckmods -R # list immediate dependencies"
-	echo    "PERL5LIB=\$(pwd)/mod plckmods -n # look for local modules"
+if [[ -n $USAGE ]]; then
+	echo -e "Usage: $0 {-n | -v}\n"
 
 # Unavailable modules
 
-elif [[ $1 == "-n" ]]; then
+elif [[ -n $LIST_NONPRESENT ]]; then
 	find -name '*.p[lm]' |\
 		xargs scandeps.pl -V 2>&1 | fgrep 'Could not' | cut -d"'" -f2 |\
 		sed -r 's/\.pm//g;s/\//::/g' | sort | uniq
@@ -22,6 +27,14 @@ elif [[ $1 == "-n" ]]; then
 # List all dependencies
 
 else
-	find . -name '*.p[lm]' | xargs scandeps.pl $* | sort
+	FILTER="cut -d= -f1"
+	[[ -n $VERBOSE ]] && FILTER=tee
+
+	find . -name '*.p[lm]' | xargs scandeps.pl -V 2>/dev/null |\
+	egrep -v '^#' | fgrep -f <(\
+		find . -name '*.p[lm]' | xargs cat |\
+			perl -nle 'print " $1" if /package\s*([\w\:]+)\s*\;/' | sort | uniq ;
+		find . -name '*.pl' | perl -nle 'print " " . (split(/\//))[-1];'
+	) | sort | $FILTER
 fi
 
