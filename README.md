@@ -160,6 +160,15 @@ $ alias > ~/.bash_aliases
 $ echo 'source ~/.bash_aliases' >> ~/.bashrc
 ```
 
+The final step is to link the key file to the host name in SSH configuration.
+Add a similar block to `~/.ssh/config` for each host:
+
+```
+Host github
+HostName github.com
+IdentityFile /path/to/keyfile
+```
+
 In the future, you only need to invoke `github` on each terminal that you wish
 to use for pushing to remotes:
 
