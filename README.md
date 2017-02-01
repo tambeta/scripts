@@ -3,6 +3,7 @@ This repo contains a few sundry scripts potentially useful to the general
 GNU/Linux-using public. The scripts are categorized into directories as follows:
 
 * `arch` - [Arch Linux](http://archlinux.org)-specific scripts
+* `dev` - generic software development-related scripts
 * `eesti` - scripts specific to Estonian services
 * `perl` - [Perl](https://www.perl.org/)-specific scripts
 * `X` - scripts useful within a graphical user environment (X11)
@@ -44,36 +45,6 @@ mp3tag {-t | -f} filename [filename ...]
 Copy mp3 tags to the filename as `ARTIST - TITLE.mp3` (`-f`) or write the artist
 and title tags to the mp3 file (`-t`) based on the filename formatted as such. Requires
 [eyeD3](http://eyed3.nicfit.net/).
-
-## reflow
-
-A Perl script accepting a block of comments (lines starting with `#` or `//`;
-also handles Python docstrings) on its standard input and piping a nicely
-formatted result to its standard output.  Use as an editor extension (Geany,
-vim, ...). Requires
-[Text::Autoformat](http://search.cpan.org/~neilb/Text-Autoformat-1.73/lib/Text/Autoformat.pm)
-and pipes the cleaned input through its main routine.  As an extended feature,
-supports formatting argument list documentation, i.e.
-
-```
-	// Add a tool to the toolbar. Attributes:
-	//
-	// id - identifier string, required
-	// toggle - a boolean specifying whether the tool is a toggle button
-	// handlers - an object of [jQuery] event handlers, keyed by event. The handler will 
-	// receive the tool spec object as event.data.
-```
-
-will be formatted as
-
-```
-	// Add a tool to the toolbar. Attributes:
-	// 
-	// id       - identifier string, required
-	// toggle   - a boolean specifying whether the tool is a toggle button
-	// handlers - an object of [jQuery] event handlers, keyed by event. The 
-	//            handler will receive the tool spec object as event.data.
-```
 
 ## vid2x264
 
@@ -124,6 +95,77 @@ passed on to pacman.
 ```
 List foreign packages (e.g. from AUR) that are required by other 
 packages
+```
+
+## dev/reflow
+
+A Perl script accepting a block of comments (lines starting with `#` or `//`;
+also handles Python docstrings) on its standard input and piping a nicely
+formatted result to its standard output.  Use as an editor extension (Geany,
+vim, ...). Requires
+[Text::Autoformat](http://search.cpan.org/~neilb/Text-Autoformat-1.73/lib/Text/Autoformat.pm)
+and pipes the cleaned input through its main routine.  As an extended feature,
+supports formatting argument list documentation, i.e.
+
+```
+	// Add a tool to the toolbar. Attributes:
+	//
+	// id - identifier string, required
+	// toggle - a boolean specifying whether the tool is a toggle button
+	// handlers - an object of [jQuery] event handlers, keyed by event. The handler will 
+	// receive the tool spec object as event.data.
+```
+
+will be formatted as
+
+```
+	// Add a tool to the toolbar. Attributes:
+	// 
+	// id       - identifier string, required
+	// toggle   - a boolean specifying whether the tool is a toggle button
+	// handlers - an object of [jQuery] event handlers, keyed by event. The 
+	//            handler will receive the tool spec object as event.data.
+```
+
+## dev/sshagconn
+
+This script attempts to solve the problem that we would like to have a) secure
+and b) convenient SSH authentication even in environments that are volatile,
+lack secure storage or are not entirely under our control. The specific case
+that inspired creation of this script was SSH access to git remotes from Docker
+containers on a shared server. Setting up SSH keys is beyond the scope of this
+document, but this is [covered in detail
+elsewhere](https://confluence.atlassian.com/bitbucket/set-up-ssh-for-git-728138079.html).
+
+`sshagconn` connects to a running
+[`ssh-agent`](https://linux.die.net/man/1/ssh-agent) or launches one if it is
+not running and consigns the desired SSH private key under its management. The
+private key should be encrypted with a passphrase and in this case, the
+passphrase is requested only once between container or machine reboots.  On
+other terminals, the script may simply be run without any further involvement
+from the user to set up environment variables pointing to the running
+`ssh-agent` instance. `sshagconn` is meant to run just as `ssh-agent` itself,
+i.e. it outputs some instructions to be parsed by the shell. In Bash, this is
+best achieved with process substitution:
+
+```
+$ source <(sshagconn /path/to/keyfile)
+```
+
+It is convenient to alias this to a easily remembered token:
+
+```
+$ alias github='source <(sshagconn /path/to/keyfile)'
+$ alias > ~/.bash_aliases
+$ echo 'source ~/.bash_aliases' >> ~/.bashrc
+```
+
+In the future, you only need to invoke `github` on each terminal that you wish
+to use for pushing to remotes:
+
+```
+$ github
+$ git push
 ```
 
 ## eesti/bank
