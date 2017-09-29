@@ -34,6 +34,7 @@ API = "http://r2.err.ee/api/loader"
 from __future__ import print_function
 
 import argparse
+import base64
 import calendar
 import datetime
 import dateutil.parser
@@ -41,6 +42,7 @@ import mutagen.id3
 import mutagen.mp4
 import mutagen.easymp4
 import mutagen.oggvorbis
+import mutagen.flac
 import json
 import os
 import re
@@ -270,6 +272,7 @@ def package_mp4(infn, outfn, title, cover):
 
 	tags["\xa9ART"] = "R2"
 	tags["\xa9nam"] = title
+	tags["\xa9alb"] = "R2"
 	tags["covr"] = cover
 	tags.save()
 
@@ -278,21 +281,21 @@ def package_mp3(infn, outfn, title, cover):
 		["ffmpeg", "-y", "-i", infn, "-acodec", "libmp3lame", "-q:a", "1", outfn])
 
 	tags = mutagen.id3.ID3(outfn)
-	tags.add(mutagen.id3.TIT2(encoding=3, text=title))
 	tags.add(mutagen.id3.TPE1(encoding=3, text="R2"))
+	tags.add(mutagen.id3.TIT2(encoding=3, text=title))
+	tags.add(mutagen.id3.TALB(encoding=3, text="R2"))
 	tags.add(mutagen.id3.APIC(encoding=3, type=3, data=cover))
 	tags.save()
 
 def package_ogg(infn, outfn, title, cover):
-
-	# Note: cover currently ignored for OGG Vorbis output
-
 	subprocess.check_call(
 		["ffmpeg", "-y", "-i", infn, "-codec:a", "libvorbis", "-qscale:a", "6", outfn])
 
 	ogg = mutagen.oggvorbis.OggVorbis(outfn)
 	ogg.tags["artist"] = u"R2"
 	ogg.tags["title"] = title
+	ogg.tags["album"] = u"R2"
+	write_ogg_image(ogg, cover)
 	ogg.save()
 
 # Auxiliary routines
@@ -363,6 +366,19 @@ def gather_outputs(args):
 			err(o[k] + " does not exist or isn't writable")
 
 	return o
+
+def write_ogg_image(ogg, cover):
+	
+	# Write an image block to OGG Vorbis, see
+	# http://mutagen.readthedocs.io/en/latest/user/vcomment.html
+	
+	picture = mutagen.flac.Picture()
+	picture.data = cover
+	picture.type = 3
+	picture.mime = u"image/jpeg"
+	
+	base64_picture = base64.b64encode(picture.write())
+	ogg["metadata_block_picture"] = [base64_picture.decode("ascii")]
 
 def debug(msg, verbosity=0):
 	if (verbosity > (debug.verbosity or 0)):
