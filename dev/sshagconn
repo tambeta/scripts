@@ -8,6 +8,7 @@
 SCRIPTNAME=$(basename $0)
 KEYFILE=${1:-~/.ssh/git.key}
 KEYFILE_BASENAME=$(basename $KEYFILE)
+USER_ID=$(id -u)
 
 function err {
 	echo "$SCRIPTNAME error: $1" >&2
@@ -17,17 +18,17 @@ function err {
 # If multiple agents are running, kill those and bail out. This should not
 # generally happen. If none are running, launch a new instance.
 
-if [[ $(pgrep ssh-agent | wc -l) -gt 1 ]]; then
+if [[ $(pgrep -u $USER_ID ssh-agent | wc -l) -gt 1 ]]; then
 	pkill ssh-agent
 	err "Multiple ssh-agents running, attempting to kill. Try again."
-elif [[ -z $(pgrep ssh-agent) ]]; then
+elif [[ -z $(pgrep -u $USER_ID ssh-agent) ]]; then
 	ssh-agent > /dev/null
 fi
 
 # Connect to a ssh-agent instance and add key if necessary. Echo variables to
 # export as ssh-agent does.
 
-APID=$(pgrep ssh-agent | head -n1)
+APID=$(pgrep -u $USER_ID ssh-agent | head -n1)
 SOCKET=$(find /tmp/ssh-* -name "agent.*" -type s | head -n1)
 
 [[ -z "$APID" ]] && err "Cannot get PID of ssh-agent."

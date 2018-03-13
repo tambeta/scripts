@@ -8,21 +8,24 @@
 EYED3=$(which eyed3 2>/dev/null)$(which eyeD3 2>/dev/null)
 
 function usage {
-	echo "mp3tag {-t | -f} filename [filename ...]"
+	echo "mp3tag {-t | -f} [-a album] filename [filename ...]"
 }
 
-while getopts "tf" OPT; do
+while getopts "tfa:" OPT; do
 	case $OPT in
 		t ) TO_TAG=1 ;;
 		f ) TO_FN=1 ;;
+        a ) ALBUM=$OPTARG ;;
 	esac
 done
 
-[[ !($TO_TAG || $TO_FN) || ($TO_TAG && $TO_FN)]] && {
+[[ !($TO_TAG || $TO_FN) || ($TO_TAG && $TO_FN) ]] && {
 	usage;
 	echo "Please specify one of -t (write tags), -f (write filename)." >&2
 	exit 1;
 }
+
+[[ -n "$ALBUM" ]] && ALBUMOPTS="-A$ALBUM"
 
 while [[ $1 ]]; do	
 	FN=$(echo $1 | egrep '\.mp3$'); shift
@@ -40,7 +43,9 @@ while [[ $1 ]]; do
 		TITLE=$(echo "$FN" | perl -nle '/^.*?-(.*?)\.mp3$/; $a = $1; $a =~ s/(^\s+|\s+$)//g; print $a;')
 		
 		if [[ "$TITLE" && "$ARTIST" ]]; then
-			$EYED3 --no-color -a "$ARTIST" -t "$TITLE" "$FN" >/dev/null
+			CMD="$EYED3 --no-color -a \"$ARTIST\" -t \"$TITLE\"" 
+            [[ -n "$ALBUMOPTS" ]] && CMD="$CMD $ALBUMOPTS"
+            eval "$CMD \"$FN\"" >/dev/null
 		else
 			echo "Cannot write tag for $FN!" >&2
 		fi

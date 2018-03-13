@@ -6,12 +6,8 @@
 INCLUDE=$(incl_excl "$FILES" include $WORKDIR/ 1)
 EXCLUDE=$(incl_excl "$EXCLUDE" exclude '**\/')
 
-if [ "$*" ]; then
-	duplicity $* $DURL
-else
-	echo "Backing up $WORKDIR to $DURL"
-	echo $INCLUDE
-	echo $EXCLUDE
-	duplicity $EXCLUDE $INCLUDE --exclude='**' $DOPTS $WORKDIR $DURL
-fi
+echo "Backing up $WORKDIR to $DURL"
+echo $INCLUDE
+echo $EXCLUDE
+duplicity $EXCLUDE $INCLUDE --allow-source-mismatch --exclude='**' $DOPTS $@ $WORKDIR $DURL
 

@@ -11,24 +11,18 @@
 # -c <filename>  - dump to file
 
 IPTV_IF=enp12s0
-IPTV_NET="^192.168.1.101"
+IPTV_NET="^192.168.1."
 
 function get_conf_field {
 	egrep "^$CHID[[:space:]]" $CONFFN | awk "{print \$$1;}" | head -n1
 }
 
-function err_play {
-	echo $1 >&2
-	[ $URL_FB ] || {
-		echo "No fallback URL specified for $CHID!" >&2
-		exit 1
-	}
-	$PLAYER $URL_FB
-	exit 0
+function warn {
+	echo $@ >&2
 }
 
 function err {
-	echo $1 >&2
+	echo $@ >&2
 	exit 1
 }
 
@@ -47,6 +41,7 @@ CONFFN="$(dirname $0)/../data/iptvrc"
 DEFAULTPLFN="$(dirname $0)/../data/iptv.m3u"
 IF=${IF-$IPTV_IF}
 PLAYER=vlc
+VLC_CMDLINE=""
 
 CHID=$(awk "/^$1[[:space:]]/ {print \$1;}" $CONFFN)
 URL=$(get_conf_field 2)
@@ -54,23 +49,27 @@ URL_FB=$(get_conf_field 3)
 	
 LOCAL_IP=$(ip a show $IF | perl -nle 'print $1 if /inet\s+((?:\d{1,3}\.?){4})/')
 
-[ $CHID ] || {\
-	URL_FB=$DEFAULTPLFN
-	err_play "No channel ID passed, falling back to default playlist"
-}
-
-[ $ALTSTREAM ] &&\
-	err_play "Web stream requested"
-[ $LOCAL_IP ] ||\
-	err_play "Cannot determine local IP address for $IF, falling back to web stream"
-echo $LOCAL_IP | egrep -q "$IPTV_NET" ||\
-	err_play "$IF is not on the IPTV subnet, falling back to web stream"
+if [[ -z "$CHID" ]]; then
+	warn "No channel ID passed, falling back to default playlist"
+	URL=$DEFAULTPLFN
+elif [[ -n "$ALTSTREAM" ]]; then
+	warn "Web stream requested"
+	URL=$URL_FB
+elif [[ -z "$LOCAL_IP" ]]; then
+	warn "Cannot determine local IP address for $IF, falling back to web stream"
+	URL=$URL_FB
+elif ! echo $LOCAL_IP | egrep -q "$IPTV_NET"; then
+	warn "$IF is not on the IPTV subnet, falling back to web stream"
+	URL=$URL_FB
+else
+	VLC_CMDLINE="--sub-track 0 --deinterlace -1 --deinterlace-mode yadif2x"
+fi
 
 shift
 
 if [[ $CAPFILE ]]; then
 	mplayer $URL -dumpstream -dumpfile $CAPFILE
 else
-	$PLAYER --sub-track 0 --deinterlace -1 --deinterlace-mode yadif2x $* $URL
+	$PLAYER $VLC_CMDLINE $* $URL
 fi
 

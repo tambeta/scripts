@@ -1,15 +1,26 @@
 #!/bin/bash
 
 # Convert a Youtube video or playlist specified by a passed URL to mp3, use
-# mp3tag to write ID3 tags. Arguments are passed to youtube-dl.
+# mp3tag to write ID3 tags. Arguments are passed to youtube-dl, except -a to
+# set the album name. Note: separate arguments to pass on with `--` to avoid
+# getopts conflict.
 
 TEEFN=/tmp/youtube2mp3-$RANDOM
+
+while getopts "a:" OPT; do
+    case $OPT in
+        a ) ALBUM=$OPTARG ;;
+    esac
+done
+shift $((OPTIND-1))
+
+[[ -n "$ALBUM" ]] && ALBUMOPTS="-a$ALBUM"
 
 youtube-dl -x -i \
 	--audio-format=mp3 --embed-thumbnail --audio-quality=2 \
 	-o '%(title)s.%(ext)s' $@ | tee $TEEFN
 
 cat $TEEFN | perl -nle 'print quotemeta($1) if /Destination:\s*(.*?\.mp3)/' | \
-	xargs -I'{}' mp3tag -t '{}'
+	xargs -I'{}' mp3tag -t "$ALBUMOPTS" '{}' 
 rm $TEEFN
 

@@ -7,35 +7,41 @@ IFN=""
 OFN=""
 PROFILE="720high"
 
+ENCSETTINGS_HIGH="-preset slow -crf 20" 
+ENCSETTINGS_MED="-preset slow -crf 23"
+
 usage() {
 	echo "Convert a video stream into x264, copying audio."
-	echo -e "\nUsage: $0 -i input_file [-p profile] output_file"
+	echo -e "\nUsage: $0 -i input_file [-p profile] [-d] output_file"
 	exit 1
 }
 
 # Parse arguments
 
-while getopts "i:p:" OPT; do
+while getopts "i:p:d" OPT; do
 	case $OPT in
 		i ) IFN=$OPTARG  ;;
 		p ) PROFILE=$OPTARG ;;
+		d ) DRYRUN=1 ;;
 	esac
 done
 
 shift $((OPTIND-1))
-OFN=$1
+OFN="$1"; shift
 
-[ -z $IFN ] && usage
-[ -z $OFN ] && usage
+[[ -z "$IFN" ]] && usage
+[[ -z "$OFN" ]] && usage
 
 # Profile definitions
 
-if [[ $PROFILE == "720high" ]]; then
+if [[ $PROFILE == "high" ]]; then
+	ENCSETTINGS=$ENCSETTINGS_HIGH
+elif [[ $PROFILE == "720high" ]]; then
 	HEIGHT="720"
-	ENCSETTINGS="-preset slow -crf 20" 
+	ENCSETTINGS=$ENCSETTINGS_HIGH
 elif [[ $PROFILE == "480med" ]]; then
 	HEIGHT="480"
-	ENCSETTINGS="-preset slow -crf 23" 
+	ENCSETTINGS=$ENCSETTINGS_MED
 else
 	echo "No valid profile specified!"
 	exit
@@ -43,9 +49,9 @@ fi
 
 # Compile command line and run ffmpeg
 
-[ $HEIGHT ] && VF="-vf scale=-2:$HEIGHT"
-CMD="ffmpeg -y -i $IFN $VF -c:v libx264 $ENCSETTINGS -c:a copy $OFN"
+[[ -n $HEIGHT ]] && VF="-vf scale=-2:$HEIGHT"
+CMD="ffmpeg -y -i '$IFN' $VF -c:v libx264 $ENCSETTINGS -c:a copy $@ '$OFN'"
 
 echo "$CMD"
-$CMD
+[[ -z $DRYRUN ]] && eval $CMD
 
