@@ -1,13 +1,17 @@
 #!/bin/bash
 
 # Without arguments, print the current temperature from meteo.physic.ut.ee
+#
 # If -R is given, print the record temperature days this year
 # If -r is given, reverse the order (i.e. display the coldest dates)
-# If -i is given, invert minima and maxima (i.e. show warmest daily minima with -R, coldest daily maxima with -Rr)
+# If -i is given, invert minima and maxima (i.e. show warmest daily minima with
+# -R, coldest daily maxima with -Rr)
 # -n determines the number of dates to output
 # -y determines year, current year by default
+# -p determines the output precision in default mode (i.e. without other
+# options)
 
-while getopts "rRdin:y:" OPT; do
+while getopts "rRdin:y:p:" OPT; do
 	case $OPT in
 		r ) REVERSE=1  ;;
 		R ) RECORDS=1  ;;
@@ -15,6 +19,7 @@ while getopts "rRdin:y:" OPT; do
 		i ) INVERSE=1 ;;
 		n ) N=$OPTARG  ;;
 		y ) YEAR=$OPTARG ;;
+		p ) PRECISION=$OPTARG ;;
 	esac
 done
 
@@ -22,6 +27,7 @@ done
 
 N=$(($N+0))
 [[ $N -le 0 ]] && N=10
+PRECISION=${PRECISION:-1}
 
 CURRYEAR=$(date +%Y)
 if [ $YEAR ]; then
@@ -53,8 +59,9 @@ fi
 # Only output current temperature and exit
 
 [ ! $RECORDS ] && {
-	wget -O - http://meteo.physic.ut.ee/et/freshwin.php 2>/dev/null | perl -nle 'print $1, " C" if (/<B>(.*?) &deg;C/);'
-	exit;
+	wget -O - http://meteo.physic.ut.ee/et/freshwin.php 2>/dev/null |\
+    perl -nle 'printf("%.'$PRECISION'f °C\n", $1) if (/<B>(.*?) &deg;C/);'
+	exit 0
 }
 
 # Dew point

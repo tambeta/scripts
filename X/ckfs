@@ -13,7 +13,7 @@ EOF
 );
 
 SCRGEOMS=$(xrandr | fgrep connected |\
-	perl -nle 'print $1 if /(\d{3,4}x\d{3,4}\+0\+0)/;')
+    perl -nle 'print $1 if /(\d{3,4}x\d{3,4})\+\d+\+\d+/;')
 IFS=" "
 N_FS=$(xwininfo -root -tree |\
 	perl -nle 's/^\s+//; print if /^0x[[:xdigit:]]+\s\"/;' |\

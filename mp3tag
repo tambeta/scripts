@@ -25,7 +25,7 @@ done
 	exit 1;
 }
 
-[[ -n "$ALBUM" ]] && ALBUMOPTS="-A$ALBUM"
+[[ -n "$ALBUM" ]] && ALBUMOPTS="-A \"$ALBUM\""
 
 while [[ $1 ]]; do	
 	FN=$(echo $1 | egrep '\.mp3$'); shift

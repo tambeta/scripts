@@ -16,7 +16,7 @@ shift $((OPTIND-1))
 
 [[ -n "$ALBUM" ]] && ALBUMOPTS="-a$ALBUM"
 
-youtube-dl -x -i \
+nice -19 youtube-dl -x -i \
 	--audio-format=mp3 --embed-thumbnail --audio-quality=2 \
 	-o '%(title)s.%(ext)s' $@ | tee $TEEFN
 

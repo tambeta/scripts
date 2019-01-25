@@ -6,8 +6,12 @@
 INCLUDE=$(incl_excl "$FILES" include $WORKDIR/ 1)
 EXCLUDE=$(incl_excl "$EXCLUDE" exclude '**\/')
 
+DOPTS="--allow-source-mismatch $DOPTS"
+[[ -n "$DENCKEY" ]] && DOPTS="--encrypt-key=$DENCKEY $DOPTS"
+
 echo "Backing up $WORKDIR to $DURL"
 echo $INCLUDE
 echo $EXCLUDE
-duplicity $EXCLUDE $INCLUDE --allow-source-mismatch --exclude='**' $DOPTS $@ $WORKDIR $DURL
+
+duplicity $EXCLUDE $INCLUDE --exclude='**' $DOPTS $@ $WORKDIR $DURL
 

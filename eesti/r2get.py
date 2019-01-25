@@ -61,7 +61,7 @@ def get_show_id_at(series_id, show_date=None):
     the most recent show ID if `show_date` is None. May raise a LookupError
     if no show found. Assumes the shows list is sorted chronologically,
     descending.
-    
+
     TODO: This assumption does not hold. The list has to be sorted
     chronologically.
     """
@@ -119,8 +119,7 @@ def get_show_stream_urls(show):
     streams = []
 
     for m in medias:
-        stream = "rtmp://{0}/{1}/{2}".format(m["server"], m["folder"], m["file"])
-        streams.append(stream)
+        streams.append("http:" + m["src"]["file"])
 
     return streams
 
@@ -145,32 +144,33 @@ def get_show_image_url(show, preferred_width=1000):
 
 def download_audio(streams, retries, quick_test=False):
 
-    # Dump raw RTMP streams into temporary files.
+    # Retrieve raw AAC sources to temporary files. Note that `quick_test`
+    # doesn't currenty seem to result in functional files.
 
     dumps = []
 
     for s in streams:
         d = tempfile.NamedTemporaryFile(suffix='.m4a')
-        args = ["rtmpdump", "-v", "-#", "-o", d.name, "-r", s]
+        args = ["curl", "-o", d.name, s]
         resume_flag = False
 
         debug("Dumping " + s + " to " + d.name)
 
         if (quick_test):
-            args += ["-B", "30"]  # call instead check_call because
-            subprocess.call(args) # rtmpdump returns non-zero w/ -B
+            args += ["-r", "0-6000000"]
+            subprocess.check_call(args)
         else:
             for i in range(0, retries):
                 if (i > 0):
                     debug("Retrying (" + str(i+1) + " / " + str(retries) + ")")
                     if (not resume_flag):
-                        args += ["-e"]
+                        args += ["-C", "-"]
                         resume_flag = True
 
                 try:
                     subprocess.check_call(args)
                 except subprocess.CalledProcessError as e:
-                    if (e.returncode == 2 and i < (retries-1)): # incomplete transfer
+                    if (e.returncode == 18 and i < (retries-1)): # incomplete transfer
                         continue
                     else:
                         err("Failed fetching stream after " + str(retries) + " times", e)
@@ -408,7 +408,7 @@ def main():
     debug("Show date:\t" + str(show_attrs.date))
     debug("Stream URLs:\t" + str(show_attrs.stream_urls))
     debug("Image URL:\t" + show_attrs.image_url)
-    
+
     if (not infns):
         infns = download_audio(show_attrs.stream_urls, args.retry, args.quick_test)
     package_audio(

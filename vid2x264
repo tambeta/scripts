@@ -35,13 +35,15 @@ OFN="$1"; shift
 # Profile definitions
 
 if [[ $PROFILE == "high" ]]; then
-	ENCSETTINGS=$ENCSETTINGS_HIGH
+	ENCSETTINGS="$ENCSETTINGS_HIGH"
+elif [[ $PROFILE == "med" ]]; then
+	ENCSETTINGS="$ENCSETTINGS_MED"
 elif [[ $PROFILE == "720high" ]]; then
 	HEIGHT="720"
-	ENCSETTINGS=$ENCSETTINGS_HIGH
+	ENCSETTINGS="$ENCSETTINGS_HIGH"
 elif [[ $PROFILE == "480med" ]]; then
 	HEIGHT="480"
-	ENCSETTINGS=$ENCSETTINGS_MED
+	ENCSETTINGS="$ENCSETTINGS_MED"
 else
 	echo "No valid profile specified!"
 	exit

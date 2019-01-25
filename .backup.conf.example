@@ -11,7 +11,8 @@ EXCLUDE=''
 # duplicity backend
 
 DURL='' 						# target URL; if set, the duplicity backend is used
-DOPTS='' 						# options for duplicity(1). If used, the normal backup process is omitted.
+DOPTS='' 						# options for duplicity(1)
+DENCKEY=''                      # GPG key ID to use for encryption
 
 # tar backend
 

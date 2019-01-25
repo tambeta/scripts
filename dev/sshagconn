@@ -8,12 +8,17 @@
 SCRIPTNAME=$(basename $0)
 KEYFILE=${1:-~/.ssh/git.key}
 KEYFILE_BASENAME=$(basename $KEYFILE)
+LIFETIME_FILE=$HOME/.config/sshagconn-lifetime
 USER_ID=$(id -u)
 
 function err {
 	echo "$SCRIPTNAME error: $1" >&2
 	exit 1
 }
+
+# Allow configuring lifetime via a configuration file for extra security.
+
+[[ -f "$LIFETIME_FILE" ]] && LIFETIME="-t $(cat "$LIFETIME_FILE")"
 
 # If multiple agents are running, kill those and bail out. This should not
 # generally happen. If none are running, launch a new instance.
@@ -38,7 +43,7 @@ export SSH_AUTH_SOCK=$SOCKET
 export SSH_AGENT_PID=$APID
 
 [[ -z "$(ssh-add -l | fgrep $KEYFILE_BASENAME)" ]] && \
-	ssh-add $KEYFILE
+	ssh-add $LIFETIME $KEYFILE
 
 echo "export SSH_AUTH_SOCK=$SOCKET"
 echo "export SSH_AGENT_PID=$APID"
