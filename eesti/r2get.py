@@ -111,15 +111,15 @@ def get_show_attrs(show_id):
 
 def get_show_stream_urls(show):
 
-    """ Helper for extracting the show RTMP stream URL from the show
-    structure (pageControlData).
+    """ Helper for extracting the show podcast URL from the show structure
+    (pageControlData).
     """
 
     medias = show["mainContent"]["medias"]
     streams = []
 
     for m in medias:
-        streams.append("http:" + m["src"]["file"])
+        streams.append(m["podcastUrl"])
 
     return streams
 
@@ -144,13 +144,12 @@ def get_show_image_url(show, preferred_width=1000):
 
 def download_audio(streams, retries, quick_test=False):
 
-    # Retrieve raw AAC sources to temporary files. Note that `quick_test`
-    # doesn't currenty seem to result in functional files.
+    # Retrieve raw MP3 podcasts to temporary files.
 
     dumps = []
 
     for s in streams:
-        d = tempfile.NamedTemporaryFile(suffix='.m4a')
+        d = tempfile.NamedTemporaryFile(suffix='.mp3')
         args = ["curl", "-o", d.name, s]
         resume_flag = False
 
@@ -182,10 +181,9 @@ def download_audio(streams, retries, quick_test=False):
 
 def package_audio(show_name, fullname, showdate, show_imgurl, infns, outputs):
 
-    # Package dumped raw RTMP stream into a proper m4a (aka ipod)
-    # container, apply tags including cover art. infns can be a list of
-    # strings (file names) or a list of NamedTemporaryFiles. outputs is
-    # a dict of output ID - directory mappings.
+    # Re-package dumped podcasts, apply tags including cover art. infns can be
+    # a list of strings (file names) or a list of NamedTemporaryFiles. outputs
+    # is a dict of output ID - directory mappings.
 
     showfn_prefix = re.sub(r"\s+", "-", show_name.lower())
 
@@ -218,29 +216,16 @@ def package_audio(show_name, fullname, showdate, show_imgurl, infns, outputs):
             if (k == "mp3"):
                 showfn += ".mp3"
                 package_mp3(infn, showfn, show_title, cover)
-            if (k == "ogg"):
+            elif (k == "ogg"):
                 showfn += ".ogg"
                 package_ogg(infn, showfn, show_title, cover)
-            elif (k == "mp4"):
-                showfn += ".m4a"
-                package_mp4(infn, showfn, show_title, cover)
-
-def package_mp4(infn, outfn, title, cover):
-    subprocess.check_call(
-        ["ffmpeg", "-y", "-i", infn, "-acodec", "copy", outfn])
-
-    tags = mutagen.mp4.MP4(outfn)
-    cover = [mutagen.mp4.MP4Cover(cover)]
-
-    tags["\xa9ART"] = "R2"
-    tags["\xa9nam"] = title
-    tags["\xa9alb"] = "R2"
-    tags["covr"] = cover
-    tags.save()
 
 def package_mp3(infn, outfn, title, cover):
+
+    """ Repackage, copying MP3 audio stream verbatim; apply tags. """
+
     subprocess.check_call(
-        ["ffmpeg", "-y", "-i", infn, "-acodec", "libmp3lame", "-q:a", "1", outfn])
+        ["ffmpeg", "-y", "-i", infn, "-acodec", "copy", outfn])
 
     tags = mutagen.id3.ID3(outfn)
     tags.add(mutagen.id3.TPE1(encoding=3, text="R2"))
@@ -299,12 +284,8 @@ def parse_command_line():
         help="number of retries in case of incomplete transfers, default 5"
     )
     parser.add_argument(
-        "-D", "--mp4-dir", default=".",
-        help="mp4 (unmodified stream) output directory"
-    )
-    parser.add_argument(
-        "--mp3-dir", default=None,
-        help="mp3 output directory"
+        "-D", "--dir", default=".",
+        help="mp3 (unmodified stream) output directory"
     )
     parser.add_argument(
         "--ogg-dir", default=None,
@@ -316,10 +297,8 @@ def parse_command_line():
 def gather_outputs(args):
     o = dict()
 
-    if (args.mp4_dir):
-        o["mp4"] = args.mp4_dir
-    if (args.mp3_dir):
-        o["mp3"] = args.mp3_dir
+    if (args.dir):
+        o["mp3"] = args.dir
     if (args.ogg_dir):
         o["ogg"] = args.ogg_dir
 
